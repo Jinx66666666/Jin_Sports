@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.proj.mapper.IAppIndexMapper">
+	<!-- 根据赛事查体育场及参赛时间 -->
+	<select id="getGame" resultType="map">
+		SELECT g.gamename,g.applydate,s.sportname,g.picture
+		FROM gameinformation g
+		JOIN stadium s 
+		on g.stadiumID = s.id
+		where g.state = 1
+	</select>
+	
+	<!-- 获取App首页赛事信息 -->
+	<select id="getGameInfo" resultType="map">
+		SELECT g.id, g.gamename,g.applydate,g.cutdate,s.address,g.begindate,g.introduce
+		FROM gameinformation g
+		JOIN stadium s 
+		on g.stadiumID = s.id
+		WHERE g.gamename = #{gamename}
+		order by g.id desc
+	</select>
+	<!-- 根据赛事名称查询免责声明 -->
+	<select id="getContent" resultType="map">
+		SELECT g.gamename,d.content
+		FROM gameinformation g
+		JOIN disclaimer d 
+		on g.disclaimerID = d.id
+		WHERE g.gamename = #{gamename}
+	</select>
+	<!-- 根据赛事名称查询组别信息 -->
+	<select id="getGroup" resultType="map">
+		SELECT gt.gname,gt.minpeople,gt.maxpeople,gt.cost,g.number,gf.gamename
+		FROM groupfrom g
+		JOIN gameinformation gf 
+		on g.gameinID = gf.id
+		JOIN grouptype gt
+		on g.groupID = gt.id
+		WHERE gf.gamename = #{gamename}
+	</select>
+	<!-- 判断数量 -->
+	<select id="selectCon" resultType="int">
+		SELECT COUNT(*)
+		FROM jin_applyindent jin
+		WHERE jin.gamenames = #{gamenames}
+		AND jin.grouping = #{grouping}
+		AND jin.phone = #{phone}
+	</select>
+	
+	
+	<!-- <select id="selectRecord" resultType="map">
+		SELECT *
+		FROM jin_applyindent jin
+	</select> -->
+	
+	<!-- 查询赛事id -->
+	<select id="selectGamename" resultType="int">
+		SELECT gf.id
+		FROM gameinformation gf
+		WHERE gf.gamename = #{gamename}
+	</select>
+	
+	<!-- 查询组别id -->
+	<select id="selectGname" resultType="int">
+		SELECT gt.id
+		FROM grouptype gt
+		where gt.gname  = #{gname}
+	</select>
+	
+	<!-- 手机app赛事报名订单信息 -->
+	
+	<insert id="addOrder">
+		insert into jin_applyindent (id, gamenames, applyname,
+		grouping, applydate, sex,
+		paystate, idcard, teamnames,
+		phone, grade, idcardphoto,
+		teamid, grouptypeid, usetel,
+		jin, jinx)
+		values (#{id,jdbcType=INTEGER}, #{gamenames,jdbcType=VARCHAR},
+		#{applyname,jdbcType=VARCHAR},
+		#{grouping,jdbcType=VARCHAR}, #{applydate,jdbcType=TIMESTAMP}, #{sex,jdbcType=VARCHAR},
+		#{paystate,jdbcType=VARCHAR}, #{idcard,jdbcType=VARCHAR},
+		#{teamnames,jdbcType=VARCHAR},
+		#{phone,jdbcType=VARCHAR}, #{grade,jdbcType=VARCHAR}, #{idcardphoto,jdbcType=VARCHAR},
+		#{teamid,jdbcType=VARCHAR}, #{grouptypeid,jdbcType=VARCHAR},
+		#{usetel,jdbcType=VARCHAR},
+		#{jin,jdbcType=VARCHAR}, #{jinx,jdbcType=VARCHAR})
+	</insert>
+	
+	<!-- 获取最新动态 -->
+	
+	<select id="getNews" resultType="map">
+		select *
+		from dynamic 
+	</select>
+	<!-- 报名支付成功后修改支付状态 -->
+	<update id="updateState">
+	    update jin_applyindent i set i.paystate="已支付" where i.jin=#{jin}
+	</update>
+	<!-- 预定场馆支付成功后修改支付状态 -->
+	<update id="updateTicketState">
+	    update stadiumticket s set s.state="已支付" where s.ordernum=#{jin}
+	</update>
+	
+	<!-- 添加团队 -->
+	<insert id="addTeam">
+    insert into jin_competingteaminfo (id, gamename, groupname, 
+      teamname, leadname, leadtel, 
+      groupid, gameinformationid, jin
+      )
+    values (#{id,jdbcType=INTEGER}, #{gamename,jdbcType=VARCHAR}, #{groupname,jdbcType=VARCHAR}, 
+      #{teamname,jdbcType=VARCHAR}, #{leadname,jdbcType=VARCHAR}, #{leadtel,jdbcType=VARCHAR}, 
+      #{groupid,jdbcType=VARCHAR}, #{gameinformationid,jdbcType=VARCHAR}, #{jin,jdbcType=VARCHAR}
+      )
+  </insert>
+  <!-- 查询赛事id -->
+	<select id="selectGamenames" resultType="Integer">
+		SELECT gf.id
+		FROM gameinformation gf
+		WHERE gf.gamename = #{gamename}
+	</select>
+	
+	<!-- 查询组别id -->
+	<select id="selectGnames" resultType="Integer">
+		SELECT gt.id
+		FROM grouptype gt
+		where gt.gname  = #{Groupname}
+	</select>
+	
+	<!-- 判断是否战队数量 -->
+	<select id="selectTeam" resultType="int">
+		SELECT COUNT(*)
+		FROM jin_competingteaminfo jin
+		WHERE jin.gamename = #{gamename}
+		AND jin.groupname = #{groupname}
+		AND jin.teamname = #{teamname}
+	</select>
+</mapper>

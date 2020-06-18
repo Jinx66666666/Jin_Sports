@@ -1,0 +1,104 @@
+<!DOCTYPE HTML >
+
+<html>
+	<!-- 
+1.先在最大的form表单中加入 :model，且在用户名与密码form表单上增加prop="" 
+2.在最大的form表单中加入:rules="rules"，在Vue中增加一个rules对象，根据prop中值添加验证规则
+3.再在最大的form表单中加入ref="ruleForm"，再在submit中增加this.$refs[formName].validate()，限制提交
+
+
+-->
+
+	<head>
+		<title>登录</title>
+		<meta charset="UTF-8" />
+		<script src="/sports/js/vue.js"></script>
+		<!-- 引入样式 -->
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<link rel="stylesheet" href="/sports/css/fonts/element-icons.woff">
+		<!-- 引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+		<script src="/sports/js/axios.min.js"></script>
+		<style type="text/css">
+			#app {
+				width: 500px;
+				margin: 280px auto;
+				
+			}
+			
+		</style>
+	</head>
+
+	<body background="img/Jin (5).jpg">
+		<div id="app">
+			<div>
+			<el-form  :model="loginInfo" status-icon :rules="rules" ref="loginInfo" label-width="100px" class="demo-ruleForm">
+				<el-form-item label="用户名" prop="username">
+					<el-input v-model="loginInfo.username" type="text" autocomplete="off"></el-input>
+				</el-form-item>
+				<el-form-item label="密码" prop="password">
+					<el-input v-model="loginInfo.password" type="password" autocomplete="off"></el-input>
+				</el-form-item>
+
+				<el-form-item>
+					<el-button type="primary" @click="submit">提 交</el-button>
+					<el-button @click="resetForm('ruleForm')">重 置</el-button>
+				</el-form-item>
+			</el-form>
+
+			</div>
+
+		</div>
+
+		<script type="text/javascript">
+			var app = new Vue({
+				el: "#app",
+				data: {
+					loginInfo:{},
+					rules:{
+						username: [
+				            { required: true, message: '请输入用户名', trigger: 'blur' },
+				            { min: 3, max: 15, message: '长度在 3 到 15 个字符', trigger: 'blur' }
+				          ],
+				        password: [
+				            { required: true, message: '请输入密码', trigger: 'blur' },
+				            { min: 3, max: 15, message: '密码长度在 3 到 15 个字符', trigger: 'blur' }
+				          ]
+					}
+				},
+				methods: {
+					submit: function() {
+						this.$refs["loginInfo"].validate(function(valid){
+							if(valid){
+								axios.post('/sports/emp/login', app.loginInfo)
+								.then(function(response) {
+									if(response.data.code == 200) {
+										//跳转
+										window.location.href = "/sports/home";
+									} else if(response.data.code == 300) {
+										app.$notify({
+											title: '账户冻结',
+											message: response.data.msg,
+											type: 'warning'
+										});
+
+									} else {
+										app.$notify.error({
+											title: '登录失败',
+											message: response.data.msg
+										});
+
+									}
+								});
+							}
+						})
+						
+					}
+				}
+
+			});
+		</script>
+
+	</body>
+
+</html>

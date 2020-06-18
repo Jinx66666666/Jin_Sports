@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.proj.mapper.IAppVideoMapper">
+
+
+	<!--查询所有的直播 在播放的 -->
+	<select id="getVideo" resultType="map">
+		SELECT
+		*
+		FROM
+		jin_video j
+		where
+		j.showstate='是' and NOW()&gt;j.begintime and NOW() &lt; j.endtime
+		ORDER BY
+		j.id DESC
+		LIMIT 0,#{pageSize}
+	</select>
+	<select id="getCount" resultType="int">
+		select count(*) FROM
+		jin_video j
+		where
+		j.showstate='是' and NOW()&gt;j.begintime and NOW() &lt; j.endtime
+		
+
+	</select>
+
+
+
+
+
+
+
+
+
+</mapper>

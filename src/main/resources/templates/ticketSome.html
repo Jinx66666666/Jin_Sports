@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+		<script src="/sports/js/vue.js"></script>
+		<!-- 引入样式 -->
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<!-- 引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+		<script src="/sports/js/axios.min.js"></script>
+		<!-- 引入 ECharts 文件 -->
+		<script src="/sports/js/echarts.min.js"></script>
+	</head>
+
+	<body>
+	<div id="app">
+	
+			<div id="main" style="width: 700px; height: 500px;"></div>
+	
+	</div>
+
+
+		<script type="text/javascript">
+		var app = new Vue({
+			el: "#app",
+			data: {
+				showSurfaceName: [],
+				showSurfaceNumber: []
+				
+			}
+		});
+		
+		function reload(){
+			axios.get('/sports/stadiumticket/getSurface')
+				.then(function(response) {
+					app.showSurfaceName = response.data.sName;
+					app.showSurfaceNumber = response.data.number;
+
+					var myChart = echarts.init(document.getElementById('main'));
+					// 指定图表的配置项和数据
+
+					var option = {
+						title: {
+							text: '票务统计图'
+						},
+						tooltip: {},
+						legend: {
+							data: ['销量（票数上限十张）']
+						},
+						xAxis: {
+							data: app.showSurfaceName
+						},
+						yAxis: {},
+						series: [{
+							name: '销量（票数上限十张）',
+							type: 'bar',
+						   data:app.showSurfaceNumber 
+						}]
+					};
+					// 使用刚指定的配置项和数据显示图表。
+					myChart.setOption(option);
+				});
+			
+		}
+		reload();
+		</script>
+	</body>
+
+</html>

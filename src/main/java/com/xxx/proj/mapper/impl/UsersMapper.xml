@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ 
+ 
+<mapper namespace="com.xxx.proj.mapper.IUsersMapper">
+	<resultMap id="BaseResultMap" type="com.xxx.proj.entity.UserPeople">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="tel" jdbcType="INTEGER" property="tel" />
+    <result column="password" jdbcType="VARCHAR" property="password" />
+    <result column="head" jdbcType="VARCHAR" property="head" />
+    <result column="registerdate" jdbcType="VARCHAR" property="registerdate" />
+  </resultMap>
+	<!-- 查询 -->
+	<sql id="UserQuery">
+
+	        <if test="name != null and name != ''">
+	           and u.name  like CONCAT('%',#{name},'%')
+	        </if>
+	        <if test="tel != null and tel != ''">
+	           and u.tel  like   
+	           CONCAT('%',#{tel},'%')
+	        </if>
+	        <if test="beginDate != null and beginDate != '' ">
+	           and u.registerdate &gt;  #{beginDate}
+	        </if>
+	        <if test="endDate != null and endDate != '' ">
+	           and u.registerdate &lt;  #{endDate}
+	        </if>
+	</sql>
+	
+	<!-- 查询所有用户 -->
+	<select id="getUsers" resultType="map">
+	      select *
+	      from userpeople u
+	      <where> 
+	      <include refid="UserQuery" />
+	      </where> 
+	      order by id desc
+	      limit #{page},#{count}
+	</select>
+	
+	<select id="getTotal" resultType="java.lang.Integer">
+	      select count(*) c from userpeople u
+	      <where>
+	      <include refid="UserQuery" />
+	      </where> 
+	</select>
+	
+	<!-- 添加新员工 -->
+	<insert id="addUser"  >
+	    insert into userpeople (name,tel,password,head,registerdate) values (#{name},#{tel},#{password},#{head},#{registerdate})
+	</insert>
+	
+	<!-- 删除员工 -->
+	<delete id="deleteUsers" >
+			delete 
+			from userpeople
+			where userpeople.id in
+		<foreach collection="array" item="id"  open="("
+			separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+	
+	<!-- 根据id获取员工 -->
+	<select id="getUserByID" resultType="com.xxx.proj.entity.UserPeople">
+	   select *  from  userpeople where id = #{id}
+	</select>
+	
+	<!-- 修改员工 -->
+	<update id="editUser">
+	    update userpeople set name=#{name},tel=#{tel},password=#{password},head=#{head},registerdate=#{registerdate} where id=#{id}
+	</update>
+	
+</mapper>
+

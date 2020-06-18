@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>sport.html</title>
+<script src="/sports/js/vue.js"></script>
+<!-- 引入样式 -->
+<link rel="stylesheet" href="/sports/css/index.css">
+<link rel="stylesheet" href="/sports/css/element-icons.woff">
+<!-- 引入组件库 -->
+<script src="/sports/js/index.js"></script>
+<script src="/sports/js/axios.min.js"></script>
+<script type="text/javascript"
+	src="http://api.map.baidu.com/api?key=nSxiPohfziUaCuONe4ViUP2N&v=1.1&services=true"></script>
+<style>
+.avatar-uploader .el-upload {
+	border: 1px dashed #d9d9d9;
+	border-radius: 6px;
+	cursor: pointer;
+	position: relative;
+	overflow: hidden;
+}
+
+.avatar-uploader .el-upload:hover {
+	border-color: #409EFF;
+}
+
+.avatar-uploader-icon {
+	font-size: 28px;
+	color: #8c939d;
+	width: 120px;
+	height: 120px;
+	line-height: 120px;
+	text-align: center;
+}
+
+.avatar {
+	width: 120px;
+	height: 120px;
+}
+</style>
+</head>
+<body>
+	<div id="app">
+		<div>
+			体育场名称：
+			<el-input v-model="sportsQuery.sportname" style="width:200px"></el-input>
+			地址：
+			<el-input v-model="sportsQuery.sportaddress" style="width:200px"></el-input>
+			<el-button icon="el-icon-search" circle @click="sportsSearch"></el-button>
+		</div>
+		<div>
+			<el-button type="success" icon="el-icon-plus" @click="showModel"
+				circle></el-button>
+			<el-button type="danger" icon="el-icon-delete" @click="deleteSport"
+				circle></el-button>
+
+			<el-table :data="tableData" style="width: 100%"
+				@selection-change="handleSelectionChange"> <el-table-column
+				type="index"></el-table-column> <el-table-column type="selection"
+				width="55"></el-table-column> <el-table-column prop="sportname"
+				label="体育场名称" width="180"> </el-table-column> <el-table-column
+				prop="sportintro" label="简介" width="180"> </el-table-column> <el-table-column
+				prop="sportaddress" label="地址" width="180"> </el-table-column> <el-table-column
+				prop="stateid" label="状态" width="180" :formatter="stateFormatter">
+			</el-table-column> <el-table-column label="操作"> <template
+				slot-scope="scope"> <el-button size="mini"
+				@click="editSport(scope.row)">编辑</el-button> <el-button size="mini"
+				@click="seeDetails(scope.row)">查看详情</el-button> </template> </el-table-column> </el-table>
+		</div>
+		<div>
+			<el-pagination @size-change="handleSizeChange"
+				@current-change="handleCurrentChange" background
+				:page-sizes="[5, 10, 15, 20]" :page-size="5"
+				layout="total, sizes, prev, pager, next, jumper" :total="tableTotal">
+			</el-pagination>
+		</div>
+		<div>
+			<el-dialog title="提示" :visible.sync="dialogVisible" width="60%"
+				circle> <el-form :inline="true" :model="sportInfo"
+				ref="sportInfo" label-width="100px" class="demo-ruleForm"
+				enctype="multipart/form-data"> <input
+				v-model="sportInfo.id" type="hidden" /> <el-form-item
+				label="体育场名称:" prop="sportname"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-input v-model="sportInfo.sportname" type="text"
+				autocomplete="off" style="width:150px;margin:10px"></el-input> </el-form-item> <el-form-item
+				label="体育场简介:" prop="sportintro"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-input v-model="sportInfo.sportintro" type="text"
+				autocomplete="off" style="width:150px;margin:10px"></el-input> </el-form-item> <el-form-item
+				label="体育场地址:" prop="sportaddress"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-input v-model="sportInfo.sportaddress" type="text"
+				autocomplete="off" style="width:200px;margin:10px"></el-input> </el-form-item> <el-form-item
+				label="体育场详情:" prop="sportinfo"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-input v-model="sportInfo.sportinfo" type="textarea" :rows="2"
+				style="width:300px;margin:10px"></el-input> </el-form-item> <br>
+			<el-form-item label="轮播图:"> <el-upload
+				class="avatar-uploader" action="/sports/sport/upload"
+				:show-file-list="false" :on-success="handleAvatarSuccess1"
+				:before-upload="beforeAvatarUpload"> <img
+				v-if="sportInfo.sportone" :src="sportInfo.sportone" class="avatar">
+			<i v-else class="el-icon-plus avatar-uploader-icon"></i> </el-upload> </el-form-item> <el-form-item>
+			<el-upload class="avatar-uploader" action="/sports/sport/upload"
+				:show-file-list="false" :on-success="handleAvatarSuccess2"
+				:before-upload="beforeAvatarUpload"> <img
+				v-if="sportInfo.sporttwo" :src="sportInfo.sporttwo" class="avatar">
+			<i v-else class="el-icon-plus avatar-uploader-icon"></i> </el-upload> </el-form-item> <el-form-item>
+			<el-upload class="avatar-uploader" action="/sports/sport/upload"
+				:show-file-list="false" :on-success="handleAvatarSuccess3"
+				:before-upload="beforeAvatarUpload"> <img
+				v-if="sportInfo.sportthree" :src="sportInfo.sportthree"
+				class="avatar"> <i v-else
+				class="el-icon-plus avatar-uploader-icon"></i> </el-upload> </el-form-item> <el-form-item>
+			<el-upload class="avatar-uploader" action="/sports/sport/upload"
+				:show-file-list="false" :on-success="handleAvatarSuccess4"
+				:before-upload="beforeAvatarUpload"> <img
+				v-if="sportInfo.sportfour" :src="sportInfo.sportfour" class="avatar">
+			<i v-else class="el-icon-plus avatar-uploader-icon"></i> </el-upload> </el-form-item> </br>
+			<el-form-item label="经度:" prop="lon"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-input v-model="sportInfo.lon" type="text" autocomplete="off"
+				style="width:200px;margin:10px"></el-input> </el-form-item> <el-form-item
+				label="纬度:" prop="lat"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-input v-model="sportInfo.lat" type="text" autocomplete="off"
+				style="width:200px;margin:10px"></el-input> </el-form-item> <el-form-item
+				label="状态:" prop="stateid"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-select v-model="sportInfo.stateid" placeholder="请选择">
+			<el-option :key="1" label="正常营业" :value="1"
+				style="width:200px;margin:10px"></el-option> <el-option :key="0"
+				label="停止营业" :value="0" style="width:200px;margin:10px"></el-option>
+			</el-select> </el-form-item> </el-form> <span slot="footer" class="dialog-footer"> <el-button
+					type="primary" @click="changeSport">保 存</el-button> <el-button
+					@click="dialogVisible = false">取 消</el-button>
+			</span> </el-dialog>
+
+		</div>
+		<div>
+			<el-dialog title="详情" :visible.sync="dialogFormVisible" width="90%">
+			<el-form :inline="true" :model="sportInfo" ref="sportInfo"
+				label-width="100px" class="demo-ruleForm"
+				enctype="multipart/form-data"> <input
+				v-model="sportInfo.id" type="hidden" /> <el-form-item
+				label="体育场名称:"> <el-input
+				v-model="sportInfo.sportname" type="text" autocomplete="off"
+				readonly style="width:200px;margin:10px"></el-input> </el-form-item> <el-form-item
+				label="体育场简介:"> <el-input
+				v-model="sportInfo.sportintro" type="text" autocomplete="off"
+				readonly style="width:200px;margin:10px"></el-input> </el-form-item> <el-form-item
+				label="体育场地址:"> <el-input
+				v-model="sportInfo.sportaddress" type="text" autocomplete="off"
+				readonly style="width:200px;margin:10px"></el-input> </el-form-item> <el-form-item
+				label="地图显示:" style="float:right">
+			<div style="width: 300px; height: 260px; border: #ccc solid 1px;"
+				id="dituContent"></div>
+			<el-button @click="openMap">显示地图</el-button> </el-form-item> <el-form-item
+				label="体育场详情:"> <el-input
+				v-model="sportInfo.sportinfo" type="textarea" :rows="2" readonly
+				style="width:300px;margin:10px"></el-input> </el-form-item> <br>
+			<el-form-item label="轮播图:"> <img
+				v-if="sportInfo.sportone" :src="sportInfo.sportone" class="avatar"
+				readonly> <img v-if="sportInfo.sporttwo"
+				:src="sportInfo.sporttwo" class="avatar" readonly> <img
+				v-if="sportInfo.sportthree" :src="sportInfo.sportthree"
+				class="avatar" readonly> <img v-if="sportInfo.sportfour"
+				:src="sportInfo.sportfour" class="avatar" readonly> </el-form-item> <br>
+			<el-form-item label="经度:"> <el-input
+				v-model="sportInfo.lon" type="text" autocomplete="off" readonly
+				style="width:200px;margin:10px"></el-input> </el-form-item> <el-form-item
+				label="纬度:"> <el-input v-model="sportInfo.lat"
+				type="text" autocomplete="off" readonly
+				style="width:200px;margin:10px"></el-input> </el-form-item> <el-form-item
+				label="状态:"> <el-input v-if="status == '1'"
+				value="正常营业" type="text" autocomplete="off" readonly
+				style="width:200px;margin:10px"></el-input> <el-input
+				v-else="status == '0'" value="停止营业" type="text" autocomplete="off"
+				readonly style="width:200px;margin:10px"></el-input> </el-form-item> </el-form> <span
+				slot="footer" class="dialog-footer"> <el-button
+					@click="dialogFormVisible = false">关 闭</el-button>
+			</span> </el-dialog>
+
+
+		</div>
+	</div>
+
+
+
+	<script type="text/javascript">
+	var app = new Vue({
+		el:"#app",
+		data:{
+			sportsQuery:{
+				page:1, //页数
+				count:5, //每页几条
+				sportname:"", //搜索姓名
+				sportaddress:""
+			},
+			readonly: true,
+			dialogFormVisible:false,
+			dialogVisible : false,
+			input: '',
+			tableTotal:0,
+			tableData:[],
+			dialogImageUrl:'',
+			sportInfo:{},
+			multipleSelection:[],
+			status:null
+			
+			
+		},
+		methods:{
+			beforeAvatarUpload(file) {
+	        const isJPG = file.type === 'image/jpeg';
+	        const isLt2M = file.size / 1024 / 1024 < 2;
+
+	        if (!isJPG) {
+	          this.$message.error('上传图片只能是 JPG 格式!');
+	        }
+	        if (!isLt2M) {
+	          this.$message.error('上传图片大小不能超过 2MB!');
+	        }
+	        return isJPG && isLt2M;
+	      },
+			handleAvatarSuccess1(res,file) {
+			if(res != null) {
+				this.$refs.sportInfo.validate(function(valid) {
+					if(valid) {
+						app.sportInfo.sportone = res;
+					}
+				});
+				this.$forceUpdate();
+			}
+		},
+		handleAvatarSuccess2(res,file) {
+			if(res != null) {
+				this.$refs.sportInfo.validate(function(valid) {
+					if(valid) {
+						app.sportInfo.sporttwo = res;
+					}
+				});
+				this.$forceUpdate();
+			}
+		},
+		handleAvatarSuccess3(res,file) {
+			if(res != null) {
+				this.$refs.sportInfo.validate(function(valid) {
+					if(valid) {
+						app.sportInfo.sportthree = res;
+					}
+				});
+				this.$forceUpdate();
+			}
+		},
+		handleAvatarSuccess4(res,file) {
+			if(res != null) {
+				this.$refs.sportInfo.validate(function(valid) {
+					if(valid) {
+						app.sportInfo.sportfour = res;
+					}
+				});
+				this.$forceUpdate();
+			}
+		},
+			stateFormatter:function(row, column, cellValue, index){
+				return cellValue == "1"?"正常营业":"停止营业";
+			},
+			showModel:function(){
+            	this.dialogVisible = true;
+            	this.sportInfo = {};
+            },
+            handleSizeChange:function(val){
+            	this.sportsQuery.count = val;
+                this.sportsQuery.page = 1;
+               reload();
+            },
+            handleCurrentChange:function(val){
+            	this.sportsQuery.page = val;
+	              reload();
+            },
+            sportsSearch:function(val){
+            	reload();
+            },
+            changeSport:function(val){
+            	this.$refs["sportInfo"].validate(function(valid) {
+				if(valid) {
+            	var url ='';
+            	if(app.sportInfo.id == null){
+            		url = '/sports/sport/addSports';
+            	}else{
+            		url = '/sports/sport/editSports';
+            	}
+            	axios.post(url,app.sportInfo)
+    			.then(function(response) {
+    				if(response.data.code == 200) {
+						app.$message({
+							message: response.data.msg,
+							type: 'success'
+						});
+						app.dialogVisible = false;
+						reload();
+					} else if(response.data.code == 300) {
+						app.$message({
+							message: response.data.msg,
+							type: 'warning'
+						});
+					} else {
+						app.$message.error(response.data.msg);
+					}
+    			});
+    			this.dialogVisible = false;
+					}
+				})
+            },
+            editSport:function(sportInfo){
+            	axios.get('/sports/sport/getSportById?id='+sportInfo.id)
+			      .then(function(response) {
+				       app.sportInfo = response.data;
+				       app.dialogVisible = true;
+				       app.status = response.data.stateid;
+			     });
+
+            },
+            handleSelectionChange: function(val) {
+				this.multipleSelection = val;
+			},
+			deleteSport:function(){
+				 this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+			          confirmButtonText: '确定',
+			          cancelButtonText: '取消',
+			          type: 'warning'
+			        }).then(function(){
+			          var ids = [];
+			          var s = app.multipleSelection;
+			          for(var index in s){
+			        	  ids.push(s[index].id);
+			          }
+			          axios.post('/sports/sport/deleteSport',ids)
+				      .then(function(response) {
+					       app.sportsQuery.page = 1;
+					       reload();
+				     })
+				     
+				     app.$message({
+								type: 'success',
+								message: '删除成功!'
+							});
+			        })
+			},
+			 seeDetails:function(sportInfo){
+				
+				axios.get('/sports/sport/getSportById?id='+sportInfo.id)
+			      .then(function(response) {
+				       app.sportInfo = response.data;
+				       app.dialogFormVisible = true;
+			     });
+			},
+			//创建和初始化地图函数：
+		    openMap :function initMap(){
+		        createMap();//创建地图
+		        setMapEvent();//设置地图事件
+		        addMapControl();//向地图添加控件
+		    }
+		}
+	})
+	//创建地图函数：
+    function createMap(){
+        var map = new BMap.Map("dituContent");//在百度地图容器中创建一个地图
+        var point = new BMap.Point(app.sportInfo.lon,app.sportInfo.lat);//定义一个中心点坐标
+        map.centerAndZoom(point,16);//设定地图的中心点和坐标并将地图显示在地图容器中
+        map.addOverlay(new BMap.Marker(point));
+        window.map = map;//将map变量存储在全局
+    }
+    
+    //地图事件设置函数：
+    function setMapEvent(){
+        map.enableDragging();//启用地图拖拽事件，默认启用(可不写)
+        map.enableScrollWheelZoom();//启用地图滚轮放大缩小
+        map.enableDoubleClickZoom();//启用鼠标双击放大，默认启用(可不写)
+        map.enableKeyboard();//启用键盘上下左右键移动地图
+    }
+    
+    //地图控件添加函数：
+    function addMapControl(){
+        //向地图中添加缩放控件
+	var ctrl_nav = new BMap.NavigationControl({anchor:BMAP_ANCHOR_TOP_LEFT,type:BMAP_NAVIGATION_CONTROL_LARGE});
+	map.addControl(ctrl_nav);
+        //向地图中添加缩略图控件
+	var ctrl_ove = new BMap.OverviewMapControl({anchor:BMAP_ANCHOR_BOTTOM_RIGHT,isOpen:1});
+	map.addControl(ctrl_ove);
+        //向地图中添加比例尺控件
+	var ctrl_sca = new BMap.ScaleControl({anchor:BMAP_ANCHOR_BOTTOM_LEFT});
+	map.addControl(ctrl_sca);
+    }
+    
+    
+
+	function reload(){
+		axios.post('/sports/sport/getSport',app.sportsQuery)
+		.then(function(response) {
+			
+			app.tableTotal = response.data.gettotal;
+			app.tableData = response.data.getsport;
+		})
+	}
+	reload();
+	</script>
+</body>
+</html>

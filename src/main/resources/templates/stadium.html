@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>stadium.html</title>
+<script src="/sports/js/vue.js"></script>
+<!-- 引入样式 -->
+<link rel="stylesheet" href="/sports/css/index.css">
+<link rel="stylesheet" href="/sports/css/element-icons.woff">
+<!-- 引入组件库 -->
+<script src="/sports/js/index.js"></script>
+<script src="/sports/js/axios.min.js"></script>
+<style type="text/css">
+.avatar-uploader .el-upload {
+	border: 1px dashed #d9d9d9;
+	border-radius: 6px;
+	cursor: pointer;
+	position: relative;
+	overflow: hidden;
+}
+
+.avatar-uploader .el-upload:hover {
+	border-color: #409EFF;
+}
+
+.avatar-uploader-icon {
+	font-size: 28px;
+	color: #8c939d;
+	width: 90px;
+	height: 90px;
+	line-height: 90px;
+	text-align: center;
+}
+
+.avatar {
+	width: 90px;
+	height: 90px;
+	margin: 10px;
+}
+</style>
+</head>
+<body>
+	<div id="app">
+		<div>
+			场馆名称：
+			<el-input v-model="stadiumQuery.stadiumname" style="width:200px"></el-input>
+			地址：
+			<el-input v-model="stadiumQuery.address" style="width:200px"></el-input>
+			<el-button icon="el-icon-search" circle @click="stadiumSearch"></el-button>
+		</div>
+		<div>
+			<el-button type="success" icon="el-icon-plus" @click="showModel"
+				circle></el-button>
+			<el-button type="danger" icon="el-icon-delete"
+				circle  @click="deleteStadium"></el-button>
+
+			<el-table :data="tableData" style="width: 100%"
+				@selection-change="handleSelectionChange"> <el-table-column
+				type="index"></el-table-column> <el-table-column type="selection"
+				width="55"></el-table-column> <el-table-column prop="stadiumname"
+				label="场馆名称" width="180"> </el-table-column> <el-table-column
+				prop="stadiumintro" label="简介" width="180"> </el-table-column> <el-table-column
+				prop="address" label="地址" width="180"> </el-table-column> <el-table-column
+				prop="state" label="状态" width="180" :formatter="stateFormatter">
+			</el-table-column> <el-table-column label="操作"> <template
+				slot-scope="scope"> <el-button size="mini"
+				@click="editStadium(scope.row)">编辑</el-button> <el-button
+				size="mini" @click="seeDetails(scope.row)">查看详情</el-button> </template> </el-table-column> </el-table>
+		</div>
+		<div>
+			<el-pagination @size-change="handleSizeChange"
+				@current-change="handleCurrentChange" background
+				:page-sizes="[5, 10, 15, 20]" :page-size="5"
+				layout="total, sizes, prev, pager, next, jumper" :total="tableTotal">
+			</el-pagination>
+		</div>
+		<div>
+			<el-dialog title="提示" :visible.sync="dialogVisible" width="60%"
+				circle> <el-form :inline="true" :model="stadiumInfo1"
+				ref="stadiumInfo1" label-width="100px" class="demo-ruleForm"
+				enctype="multipart/form-data"> <input
+				v-model="stadiumInfo1.id" type="hidden"
+				style="width: 150px; margin: 10px" /> <el-form-item label="体育场名称:"
+				prop="sportid"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-select v-model="stadiumInfo1.sportid" placeholder="请选择">
+			<el-option v-for="sport in sportList" :key="sport.id"
+				:label="sport.sportname" :value="sport.id"></el-option> </el-select> </el-form-item> <el-form-item
+				label="场馆名称:" prop="stadiumname"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-input v-model="stadiumInfo1.stadiumname" type="text"
+				autocomplete="off" style="width:150px;margin:10px"></el-input> </el-form-item> <el-form-item
+				label="场馆简介:" prop="stadiumintro"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-input v-model="stadiumInfo1.stadiumintro" type="text"
+				autocomplete="off" style="width:150px;margin:10px"></el-input> </el-form-item> <br>
+			<el-form-item label="场馆详情:" prop="stadiuminfo"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-input v-model="stadiumInfo1.stadiuminfo" type="textarea"
+				:rows="2" style="width:500px;margin:10px"></el-input> </el-form-item> <el-form-item
+				label="场馆地址:" prop="address"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-input v-model="stadiumInfo1.address" type="text"
+				autocomplete="off" style="width:200px;margin:10px"></el-input> </el-form-item> <!-- <el-form-item label="经度:" prop="lon" :rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+					<el-input v-model="stadiumInfo1.lon" type="text" autocomplete="off" style="width:150px;margin:10px"></el-input>
+					</el-form-item>
+					<el-form-item label="纬度:" prop="lat" :rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+					<el-input v-model="stadiumInfo1.lat" type="text" autocomplete="off" style="width:150px;margin:10px"></el-input>
+				</el-form-item> --> <br>
+			轮播图：<el-form-item> <el-upload class="avatar-uploader"
+				action="/sports/stadium/upload" :show-file-list="false"
+				:on-success="handleAvatarSuccess1"
+				:before-upload="beforeAvatarUpload"> <img
+				v-if="stadiumInfo1.showone" :src="stadiumInfo1.showone"
+				class="avatar"> <i v-else
+				class="el-icon-plus avatar-uploader-icon"></i> </el-upload> </el-form-item> <el-form-item>
+			<el-upload class="avatar-uploader" action="/sports/stadium/upload"
+				:show-file-list="false" :on-success="handleAvatarSuccess2"
+				:before-upload="beforeAvatarUpload"> <img
+				v-if="stadiumInfo1.showtwo" :src="stadiumInfo1.showtwo"
+				class="avatar"> <i v-else
+				class="el-icon-plus avatar-uploader-icon"></i> </el-upload> </el-form-item> <el-form-item>
+			<el-upload class="avatar-uploader" action="/sports/stadium/upload"
+				:show-file-list="false" :on-success="handleAvatarSuccess3"
+				:before-upload="beforeAvatarUpload"> <img
+				v-if="stadiumInfo1.showthree" :src="stadiumInfo1.showthree"
+				class="avatar"> <i v-else
+				class="el-icon-plus avatar-uploader-icon"></i> </el-upload> </el-form-item> <el-form-item>
+			<el-upload class="avatar-uploader" action="/sports/stadium/upload"
+				:show-file-list="false" :on-success="handleAvatarSuccess4"
+				:before-upload="beforeAvatarUpload"> <img
+				v-if="stadiumInfo1.showfour" :src="stadiumInfo1.showfour"
+				class="avatar"> <i v-else
+				class="el-icon-plus avatar-uploader-icon"></i> </el-upload> </el-form-item> <el-form-item
+				label="状态:" prop="state"
+				:rules="[{ required: true, message: '该为必填项', trigger: 'blur' }]">
+			<el-select v-model="stadiumInfo1.state" placeholder="请选择"
+				style="width:200px;margin:10px"> <el-option :key="1"
+				label="正常" :value="1"></el-option> <el-option :key="0" label="非正常"
+				:value="0"></el-option> </el-select> </el-form-item> </el-form> <span slot="footer" class="dialog-footer">
+				<el-button type="primary" @click="changeStadium">保 存</el-button> <el-button
+					@click="dialogVisible = false">取 消</el-button>
+			</span> </el-dialog>
+
+		</div>
+		<div>
+			<el-dialog title="详情" :visible.sync="dialogFormVisible" width="60%">
+			<el-form :inline="true" :model="stadiumInfo1" ref="stadiumInfo1"
+				label-width="100px" class="demo-ruleForm"
+				enctype="multipart/form-data"> <el-form-item>
+			<input v-model="stadiumInfo1.id" type="hidden" /> 体育场名称:<el-select
+				v-model="stadiumInfo1.sportid" placeholder="请选择"
+				style="width:200px;margin:10px" disabled> <el-option
+				v-for="sport in sportList" :key="sport.id" :label="sport.sportname"
+				:value="sport.id"></el-option> </el-select> 场馆名称:<el-input
+				v-model="stadiumInfo1.stadiumname" type="text" autocomplete="off"
+				readonly style="width:200px;margin:10px" disabled></el-input> 场馆简介:<el-input
+				v-model="stadiumInfo1.stadiumintro" type="text" autocomplete="off"
+				readonly style="width:200px;margin:10px" disabled></el-input> </el-form-item> <el-form-item
+				label="场馆详情:"> <el-input
+				v-model="stadiumInfo1.stadiuminfo" type="textarea" :rows="2"
+				readonly style="width:500px;margin:10px" disabled></el-input> </el-form-item> <el-form-item
+				label="场馆地址:"> <el-input
+				v-model="stadiumInfo1.address" type="text" autocomplete="off"
+				readonly style="width:200px;margin:10px" disabled></el-input> <!-- 经度:<el-input v-model="stadiumInfo1.lon" type="text" autocomplete="off" readonly style="width:200px;margin:10px"></el-input>
+					纬度:<el-input v-model="stadiumInfo1.lat" type="text" autocomplete="off" readonly style="width:200px;margin:10px"></el-input> -->
+			</el-form-item> <br>
+			轮播图:<el-form-item> <img v-if="stadiumInfo1.showone"
+				:src="stadiumInfo1.showone" class="avatar" disabled> <img
+				v-if="stadiumInfo1.showtwo" :src="stadiumInfo1.showtwo"
+				class="avatar" disabled> <img v-if="stadiumInfo1.showthree"
+				:src="stadiumInfo1.showthree" class="avatar" disabled> <img
+				v-if="stadiumInfo1.showfour" :src="stadiumInfo1.showfour"
+				class="avatar" disabled> </el-form-item> 状态:<el-form-item> <el-input
+				v-if="status == '1'" value="正常" type="text" autocomplete="off"
+				readonly style="width:200px;margin:10px" disabled></el-input> <el-input
+				v-else="status == '0'" value="非正常" type="text" autocomplete="off"
+				readonly style="width:200px;margin:10px" disabled></el-input> </el-form-item> </el-form> <span
+				slot="footer" class="dialog-footer"> <el-button
+					@click="dialogFormVisible = false">关 闭</el-button>
+			</span> </el-dialog>
+
+
+		</div>
+	</div>
+
+	<script type="text/javascript">
+	var app = new Vue({
+		el:"#app",
+		data:{
+			stadiumQuery:{
+				page:1, //页数
+				count:5, //每页几条
+				stadiumname:"", //搜索姓名
+				address:""
+			},
+			readonly: true,
+			dialogFormVisible:false,
+			dialogVisible : false,
+			input: '',
+			tableTotal:0,
+			tableData:[],
+			dialogImageUrl:'',
+			stadiumInfo1:{},
+			multipleSelection:[],
+			sportList : [],
+			status : null
+			
+		},
+		methods:{
+			beforeAvatarUpload(file) {
+		        const isJPG = file.type === 'image/jpeg';
+		        const isLt2M = file.size / 1024 / 1024 < 2;
+
+		        if (!isJPG) {
+		          this.$message.error('上传图片只能是 JPG 格式!');
+		        }
+		        if (!isLt2M) {
+		          this.$message.error('上传图片大小不能超过 2MB!');
+		        }
+		        return isJPG && isLt2M;
+		      },
+				handleAvatarSuccess1(res,file) {
+				if(res != null) {
+					this.$refs.stadiumInfo1.validate(function(valid) {
+						if(valid) {
+							app.stadiumInfo1.showone = res;
+						}
+					});
+					this.$forceUpdate();
+				}
+			},
+			handleAvatarSuccess2(res,file) {
+				if(res != null) {
+					this.$refs.stadiumInfo1.validate(function(valid) {
+						if(valid) {
+							app.stadiumInfo1.showtwo = res;
+						}
+					});
+					this.$forceUpdate();
+				}
+			},
+			handleAvatarSuccess3(res,file) {
+				if(res != null) {
+					this.$refs.stadiumInfo1.validate(function(valid) {
+						if(valid) {
+							app.stadiumInfo1.showthree = res;
+						}
+					});
+					this.$forceUpdate();
+				}
+			},
+			handleAvatarSuccess4(res,file) {
+				if(res != null) {
+					this.$refs.stadiumInfo1.validate(function(valid) {
+						if(valid) {
+							app.stadiumInfo1.showfour = res;
+						}
+					});
+					this.$forceUpdate();
+				}
+			},
+			stateFormatter:function(row, column, cellValue, index){
+				return cellValue == "1"?"正常营业":"停止营业";
+			},
+			showModel:function(){
+            	this.dialogVisible = true;
+            	this.stadiumInfo1={};
+            },
+            handleSizeChange:function(val){
+            	this.stadiumQuery.count = val;
+                this.stadiumQuery.page = 1;
+               reload();
+            },
+            handleCurrentChange:function(val){
+            	this.stadiumQuery.page = val;
+	              reload();
+            },
+            stadiumSearch:function(val){
+            	reload();
+            },
+            changeStadium:function(val){
+            	this.$refs["stadiumInfo1"].validate(function(valid) {
+    				if(valid) {
+            	var url ='';
+            	if(app.stadiumInfo1.id == null){
+            		url = '/sports/stadium/addStadium';
+            	}else{
+            		url = '/sports/stadium/editStadium';
+            	}
+            	axios.post(url,app.stadiumInfo1)
+    			.then(function(response) {
+    				if(response.data.code == 200) {
+						app.$message({
+							message: response.data.msg,
+							type: 'success'
+						});
+						app.dialogVisible = false;
+						reload();
+					} else if(response.data.code == 300) {
+						app.$message({
+							message: response.data.msg,
+							type: 'warning'
+						});
+					} else {
+						app.$message.error(response.data.msg);
+					}
+    			});
+    			this.dialogVisible = false;
+    				}
+				})
+            },
+            editStadium:function(stadiumInfo1){
+            	axios.get('/sports/stadium/getStadiumById?id='+stadiumInfo1.id)
+			      .then(function(response) {
+				       app.stadiumInfo1 = response.data;
+				       app.dialogVisible = true;
+				       app.status = response.data.state;
+			     });
+
+            },
+            handleSelectionChange: function(val) {
+				this.multipleSelection = val;
+			},
+			deleteStadium:function(){
+				 this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+			          confirmButtonText: '确定',
+			          cancelButtonText: '取消',
+			          type: 'warning'
+			        }).then(function(){
+			          var ids = [];
+			          var s = app.multipleSelection;
+			          for(var index in s){
+			        	  ids.push(s[index].id);
+			          }
+			          axios.post('/sports/stadium/deleteStadium',ids)
+				      .then(function(response) {
+					       app.stadiumQuery.page = 1;
+					       reload();
+				     })
+				     app.$message({
+								type: 'success',
+								message: '删除成功!'
+							});
+			        })
+			},
+			 seeDetails:function(stadiumInfo1){
+				
+				axios.get('/sports/stadium/getStadiumById?id='+stadiumInfo1.id)
+			      .then(function(response) {
+				       app.stadiumInfo1 = response.data;
+				       app.dialogFormVisible = true;
+			     });
+			} 
+            
+		}
+	})
+	
+	function reload(){
+		axios.post('/sports/stadium/getStadium',app.stadiumQuery)
+		.then(function(response) {
+			app.tableTotal = response.data.gettotal;
+			app.tableData = response.data.getstadium;
+		})
+	}
+	reload();
+	axios.post('/sports/stadium/getSport')
+	.then(function(response) {
+		app.sportList = response.data;
+	})
+	</script>
+</body>
+</html>

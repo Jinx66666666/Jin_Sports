@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.proj.mapper.IJinApplyIndentMapper">
+	<resultMap id="BaseResultMap" type="com.xxx.proj.entity.JinApplyIndent">
+		<id column="id" jdbcType="INTEGER" property="id" />
+		<result column="gamenames" jdbcType="VARCHAR" property="gamenames" />
+		<result column="applyname" jdbcType="VARCHAR" property="applyname" />
+		<result column="grouping" jdbcType="VARCHAR" property="grouping" />
+		<result column="applydate" jdbcType="TIMESTAMP" property="applydate" />
+		<result column="sex" jdbcType="VARCHAR" property="sex" />
+		<result column="paystate" jdbcType="VARCHAR" property="paystate" />
+		<result column="idcard" jdbcType="VARCHAR" property="idcard" />
+		<result column="teamnames" jdbcType="VARCHAR" property="teamnames" />
+		<result column="phone" jdbcType="VARCHAR" property="phone" />
+		<result column="grade" jdbcType="VARCHAR" property="grade" />
+		<result column="idcardphoto" jdbcType="VARCHAR" property="idcardphoto" />
+		<result column="teamid" jdbcType="VARCHAR" property="teamid" />
+		<result column="grouptypeid" jdbcType="VARCHAR" property="grouptypeid" />
+		<result column="usetel" jdbcType="VARCHAR" property="usetel" />
+		<result column="jin" jdbcType="VARCHAR" property="jin" />
+		<result column="jinx" jdbcType="VARCHAR" property="jinx" />
+	</resultMap>
+	<sql id="Base_Column_List">
+		id, gamenames, applyname, grouping, applydate, sex, paystate, idcard,
+		teamnames,
+		phone, grade, idcardphoto, teamid, grouptypeid, usetel, jin, jinx
+	</sql>
+	<sql id="applyIndentQuery">
+ 			<if test="beginDate != null and beginDate != '' ">
+	           and g.applydate &gt;  #{beginDate}
+	        </if>
+	        <if test="endDate != null and endDate != '' ">
+	           and g.applydate &lt;  #{endDate}
+	        </if>
+	        <if test="paystate != null and paystate != '' ">
+	           and jin.paystate like CONCAT('%',#{paystate},'%')
+	        </if>
+	</sql>
+	<!-- 赛事统计图 -->
+	<select id="cartogram" resultType="map">
+		SELECT g.applydate, jin.paystate, g.gamename as name, COUNT(*) value
+		FROM gameinformation g,jin_applyindent jin
+		 where g.id = jin.gamenames
+	      <include refid="applyIndentQuery" />
+		GROUP BY g.gamename
+	</select>
+	<!-- 赛事组别联动 -->
+	<resultMap type="map" id="selectSaiShiMap">
+		<id column="id" property="value"/>
+		<result column="gamename" property="label" />
+		<collection column="{gID=id}" property="children" javaType="list"
+			select="getGameList" />
+	</resultMap>
+	<select id="getGameList" parameterType="map" resultType="map">
+		<!-- SELECT gg.gamename,ggg.gname FROM groupfrom g,gameinformation gg, 
+		grouptype ggg WHERE g.gameinID = #{gameinID} AND g.groupID = #{groupID}
+ -->
+		SELECT gf.groupID value ,gt.gname label
+		FROM groupfrom gf
+		join grouptype gt
+		on gf.groupID=gt.id
+
+		where gf.gameinID=#{gID}
+
+	</select>
+	<!-- 点击新增弹出dialog窗口查询赛事名称和类别名称 -->
+	<select id="getGame"  resultMap="selectSaiShiMap">
+		<!-- select id, gamename from gameinformation -->
+		SELECT id,gamename
+		from gameinformation 				
+	</select>
+	<!-- <select id="getGame">
+		select id, gamename from gameinformation
+		SELECT id,gamename
+		from gameinformation 
+		
+		
+	</select> -->
+	<select id="getGroup" resultType="map">
+		select id,gname
+		from grouptype
+	</select>
+
+	<select id="getTeam" resultType="map">
+		SELECT id,teamname
+		FROM
+		jin_competingteaminfo
+	</select>
+	<!-- Excel导出 -->
+	<select id="getApplyInfoNoPage" resultType="map">
+		SELECT e.id,e.applyname,e.idcard,e.sex,e.phone,e.applydate,e.paystate,e.grade,e.idcardphoto,e.teamnames,g.gamename,gg.gname
+		FROM jin_applyindent e 
+		inner join gameinformation g on e.gamenames = g.id
+		inner join grouptype gg on e.grouping = gg.id
+		<include refid="jinApplyQuery" />
+		<!-- limit #{page},#{count} -->
+	</select>
+	<!-- 删除赛事报名订单信息 -->
+	<delete id="deleteApply" parameterType="java.lang.Integer">
+		delete from jin_applyindent
+		where id in
+		<foreach collection="array" item="id" open="(" separator=","
+			close=")">
+			#{id}
+		</foreach>
+	</delete>
+	<!-- 修改赛事报名订单信息 -->
+	<update id="editApply" parameterType="com.xxx.proj.entity.JinApplyIndent">
+		update jin_applyindent
+		set gamenames = #{gamenames,jdbcType=VARCHAR},
+		applyname = #{applyname,jdbcType=VARCHAR},
+		grouping = #{grouping,jdbcType=VARCHAR},
+		applydate = #{applydate,jdbcType=TIMESTAMP},
+		sex = #{sex,jdbcType=VARCHAR},
+		paystate = #{paystate,jdbcType=VARCHAR},
+		idcard = #{idcard,jdbcType=VARCHAR},
+		teamnames = #{teamnames,jdbcType=VARCHAR},
+		phone = #{phone,jdbcType=VARCHAR},
+		grade = #{grade,jdbcType=VARCHAR},
+		idcardphoto = #{idcardphoto,jdbcType=VARCHAR},
+		teamid = #{teamid,jdbcType=VARCHAR},
+		grouptypeid = #{grouptypeid,jdbcType=VARCHAR},
+		usetel = #{usetel,jdbcType=VARCHAR},
+		jin = #{jin,jdbcType=VARCHAR},
+		jinx = #{jinx,jdbcType=VARCHAR}
+		where id = #{id,jdbcType=INTEGER}
+	</update>
+	<!-- 点击编辑根据id获取信息 -->
+	<select id="getEditApply" resultType="JinApplyIndent">
+		select * from jin_applyindent where id = #{id}
+	</select>
+
+
+	<!-- 分页+查询 -->
+	<sql id="jinApplyQuery">
+		<where>
+			<if test="gamename != null and gamename != '' ">
+				and g.gamename like CONCAT('%',#{gamename},'%')
+			</if>
+			<if test="applydate != null and applydate != '' ">
+				and e.applydate like CONCAT('%',#{applydate},'%')
+			</if>
+			<if test="applyname != null and applyname != '' ">
+				and e.applyname like CONCAT('%',#{applyname},'%')
+			</if>
+		</where>
+	</sql>
+
+	<select id="getApplyInfo" resultType="map">
+		SELECT e.id,e.applyname,e.idcard,e.sex,e.phone,e.applydate,e.paystate,e.grade,e.idcardphoto,e.teamnames,g.gamename,gg.gname,e.jin
+		FROM jin_applyindent e 
+		inner join gameinformation g on e.gamenames = g.id
+		inner join grouptype gg on e.grouping = gg.id
+		<include refid="jinApplyQuery" />
+		ORDER BY e.id desc
+		limit #{page},#{count}
+	</select>
+
+	<select id="getApplyTotal" resultType="java.lang.Integer">
+		select count(*) c from jin_applyindent e
+		inner join gameinformation g on e.gamenames = g.id
+		inner join grouptype gg on e.grouping = gg.id
+		<include refid="jinApplyQuery" />
+	</select>
+
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer"
+		resultMap="BaseResultMap">
+		select
+		<include refid="Base_Column_List" />
+		from jin_applyindent
+		where id = #{id,jdbcType=INTEGER}
+	</select>
+
+	<insert id="upload" parameterType="com.xxx.proj.entity.JinApplyIndent">
+		insert into jin_applyindent (id, gamenames, applyname,
+		grouping, applydate, sex,
+		paystate, idcard, teamnames,
+		phone, grade, idcardphoto,
+		teamid, grouptypeid, usetel,
+		jin, jinx)
+		values (#{id,jdbcType=INTEGER}, #{gamenames,jdbcType=VARCHAR},
+		#{applyname,jdbcType=VARCHAR},
+		#{grouping,jdbcType=VARCHAR}, #{applydate,jdbcType=TIMESTAMP}, #{sex,jdbcType=VARCHAR},
+		#{paystate,jdbcType=VARCHAR}, #{idcard,jdbcType=VARCHAR},
+		#{teamnames,jdbcType=VARCHAR},
+		#{phone,jdbcType=VARCHAR}, #{grade,jdbcType=VARCHAR}, #{idcardphoto,jdbcType=VARCHAR},
+		#{teamid,jdbcType=VARCHAR}, #{grouptypeid,jdbcType=VARCHAR},
+		#{usetel,jdbcType=VARCHAR},
+		#{jin,jdbcType=VARCHAR}, #{jinx,jdbcType=VARCHAR})
+	</insert>
+	<insert id="insertSelective" parameterType="com.xxx.proj.entity.JinApplyIndent">
+		insert into jin_applyindent
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				id,
+			</if>
+			<if test="gamenames != null">
+				gamenames,
+			</if>
+			<if test="applyname != null">
+				applyname,
+			</if>
+			<if test="grouping != null">
+				grouping,
+			</if>
+			<if test="applydate != null">
+				applydate,
+			</if>
+			<if test="sex != null">
+				sex,
+			</if>
+			<if test="paystate != null">
+				paystate,
+			</if>
+			<if test="idcard != null">
+				idcard,
+			</if>
+			<if test="teamnames != null">
+				teamnames,
+			</if>
+			<if test="phone != null">
+				phone,
+			</if>
+			<if test="grade != null">
+				grade,
+			</if>
+			<if test="idcardphoto != null">
+				idcardphoto,
+			</if>
+			<if test="teamid != null">
+				teamid,
+			</if>
+			<if test="grouptypeid != null">
+				grouptypeid,
+			</if>
+			<if test="usetel != null">
+				usetel,
+			</if>
+			<if test="jin != null">
+				jin,
+			</if>
+			<if test="jinx != null">
+				jinx,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				#{id,jdbcType=INTEGER},
+			</if>
+			<if test="gamenames != null">
+				#{gamenames,jdbcType=VARCHAR},
+			</if>
+			<if test="applyname != null">
+				#{applyname,jdbcType=VARCHAR},
+			</if>
+			<if test="grouping != null">
+				#{grouping,jdbcType=VARCHAR},
+			</if>
+			<if test="applydate != null">
+				#{applydate,jdbcType=TIMESTAMP},
+			</if>
+			<if test="sex != null">
+				#{sex,jdbcType=VARCHAR},
+			</if>
+			<if test="paystate != null">
+				#{paystate,jdbcType=VARCHAR},
+			</if>
+			<if test="idcard != null">
+				#{idcard,jdbcType=VARCHAR},
+			</if>
+			<if test="teamnames != null">
+				#{teamnames,jdbcType=VARCHAR},
+			</if>
+			<if test="phone != null">
+				#{phone,jdbcType=VARCHAR},
+			</if>
+			<if test="grade != null">
+				#{grade,jdbcType=VARCHAR},
+			</if>
+			<if test="idcardphoto != null">
+				#{idcardphoto,jdbcType=VARCHAR},
+			</if>
+			<if test="teamid != null">
+				#{teamid,jdbcType=VARCHAR},
+			</if>
+			<if test="grouptypeid != null">
+				#{grouptypeid,jdbcType=VARCHAR},
+			</if>
+			<if test="usetel != null">
+				#{usetel,jdbcType=VARCHAR},
+			</if>
+			<if test="jin != null">
+				#{jin,jdbcType=VARCHAR},
+			</if>
+			<if test="jinx != null">
+				#{jinx,jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+	<update id="updateByPrimaryKeySelective" parameterType="com.xxx.proj.entity.JinApplyIndent">
+		update jin_applyindent
+		<set>
+			<if test="gamenames != null">
+				gamenames = #{gamenames,jdbcType=VARCHAR},
+			</if>
+			<if test="applyname != null">
+				applyname = #{applyname,jdbcType=VARCHAR},
+			</if>
+			<if test="grouping != null">
+				grouping = #{grouping,jdbcType=VARCHAR},
+			</if>
+			<if test="applydate != null">
+				applydate = #{applydate,jdbcType=TIMESTAMP},
+			</if>
+			<if test="sex != null">
+				sex = #{sex,jdbcType=VARCHAR},
+			</if>
+			<if test="paystate != null">
+				paystate = #{paystate,jdbcType=VARCHAR},
+			</if>
+			<if test="idcard != null">
+				idcard = #{idcard,jdbcType=VARCHAR},
+			</if>
+			<if test="teamnames != null">
+				teamnames = #{teamnames,jdbcType=VARCHAR},
+			</if>
+			<if test="phone != null">
+				phone = #{phone,jdbcType=VARCHAR},
+			</if>
+			<if test="grade != null">
+				grade = #{grade,jdbcType=VARCHAR},
+			</if>
+			<if test="idcardphoto != null">
+				idcardphoto = #{idcardphoto,jdbcType=VARCHAR},
+			</if>
+			<if test="teamid != null">
+				teamid = #{teamid,jdbcType=VARCHAR},
+			</if>
+			<if test="grouptypeid != null">
+				grouptypeid = #{grouptypeid,jdbcType=VARCHAR},
+			</if>
+			<if test="usetel != null">
+				usetel = #{usetel,jdbcType=VARCHAR},
+			</if>
+			<if test="jin != null">
+				jin = #{jin,jdbcType=VARCHAR},
+			</if>
+			<if test="jinx != null">
+				jinx = #{jinx,jdbcType=VARCHAR},
+			</if>
+		</set>
+		where id = #{id,jdbcType=INTEGER}
+	</update>
+
+</mapper>

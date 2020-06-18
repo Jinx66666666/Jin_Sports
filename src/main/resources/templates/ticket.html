@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>user.html</title>
+		<meta charset="utf-8" />
+		<!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+		引入样式
+		<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+		引入组件库
+		<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
+		<script src="/sports/js/vue.js"></script>
+		<script src="/sports/js/axios.min.js"></script>
+		<!-- 引入样式 -->
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<!-- 引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+		<style type="text/css">
+			.avatar-uploader .el-upload {
+				border: 1px dashed #d9d9d9;
+				border-radius: 6px;
+				cursor: pointer;
+				position: relative;
+				overflow: hidden;
+				float:left;
+				margin-right:3%;
+			}
+			
+			.avatar-uploader .el-upload:hover {
+				border-color: #409EFF;
+			}
+			
+			.avatar-uploader-icon {
+				font-size: 28px;
+				color: #8c939d;
+				width: 178px;
+				height: 178px;
+				line-height: 178px;
+				text-align: center;
+			}
+			
+			.avatar {
+				width: 178px;
+				height: 178px;
+				display: block;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="app">
+			<div>
+				<el-button type="success" icon="el-icon-plus" @click="showModel" circle></el-button>
+				<el-button type="danger" icon="el-icon-delete" circle @click="deleteTicket"></el-button>
+				体育场名称:
+				<el-input v-model="ticketQuery.sportname" placeholder="请输入体育场名称" style="width:200px" clearable></el-input>
+				场馆名称:
+				<el-input v-model="ticketQuery.stadiumname" placeholder="请输入场馆名称" style="width:200px" clearable></el-input>
+				<el-button icon="el-icon-search" circle @click="reviewSearch"></el-button>
+			</div>
+
+			<el-table :data="tableData" style="width: 100% ;height:90%" @selection-change="handleSelectionChange">
+				<el-table-column type="index"></el-table-column>
+				<el-table-column type="selection"  width="55"></el-table-column>
+				<el-table-column prop="sportname" label="体育场名称" width="300">
+				</el-table-column>
+				<el-table-column prop="stadiumname" label="场馆名称" width="300">
+				</el-table-column>
+				<el-table-column prop="ticketname" label="票务名称" width="400">
+				</el-table-column>
+				<el-table-column prop="ticketprice" label="票务价格" width="300">
+				</el-table-column>
+				<el-table-column label="操作">
+					<template slot-scope="scope">
+						<el-button size="mini" @click="editticket(scope.row)">编辑</el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+			<div>
+				<el-pagination @size-change="handleSizeChange" :current-page="ticketQuery.page" @current-change="handleCurrentChange" :page-sizes="[5, 10, 15, 20]" :page-size="5" layout="total, sizes, prev, pager, next, jumper" :total="tableTotal">
+				</el-pagination>
+			</div>
+
+			<div>
+				<el-dialog title="场馆票务添加" :visible.sync="dialogVisible" @close="closeDialog" width="60%">
+					<el-form :model="ticketInfo" ref="ticketInfo" label-width="100px" :rules="rules"  class="demo-ruleForm">
+						<input type="hidden"  v-model="ticketInfo.id" />
+						<el-form-item label="场馆名称" prop="stadiumList">
+							<el-cascader expand-trigger="hover" :options="gameField" v-model="ticketInfo.stadiumList" >
+							</el-cascader>
+						</el-form-item>
+						<el-form-item label="票务名称" prop="ticketname">
+							<el-input v-model="ticketInfo.ticketname"   type="text" autocomplete="off" style="width:40%" ></el-input>
+						</el-form-item>
+						<el-form-item label="票务价格" prop="ticketprice">
+							<el-input v-model="ticketInfo.ticketprice"   type="text" autocomplete="off" style="width:40%"></el-input>
+						</el-form-item>
+						<el-form-item label="票务数量" prop="ticketnumber">
+							<el-input v-model="ticketInfo.ticketnumber"   type="text" autocomplete="off" style="width:40%"></el-input>
+						</el-form-item>
+						<el-form-item label="票务时间" >
+							<el-time-picker v-model="ticketInfo.beginbusiness"   placeholder="选择开始时间"></el-time-picker>
+							~
+							<el-time-picker v-model="ticketInfo.endbusiness"    placeholder="选择结束时间"></el-time-picker>
+						</el-form-item>
+						<el-form-item label="购买须知" prop="buynotice">
+							<el-input v-model="ticketInfo.buynotice"  rows = "5" cols = "50" type="textarea" autocomplete="off"></el-input>
+						</el-form-item>
+						<el-form-item label="轮播图" >
+							<el-upload class="avatar-uploader" action="/sports/users/upload" :show-file-list="false"  :on-success="handleAvatarSuccess1" :before-upload="beforeAvatarUpload">
+								<img v-if="ticketInfo.ticketone" :src="ticketInfo.ticketone" class="avatar">
+								<i v-else class="el-icon-plus avatar-uploader-icon"></i>
+							</el-upload>
+							<el-upload class="avatar-uploader" action="/sports/users/upload" :show-file-list="false"  :on-success="handleAvatarSuccess2" :before-upload="beforeAvatarUpload">
+								<img v-if="ticketInfo.tickettwo" :src="ticketInfo.tickettwo" class="avatar">
+								<i v-else class="el-icon-plus avatar-uploader-icon"></i>
+							</el-upload>
+							<el-upload class="avatar-uploader" action="/sports/users/upload" :show-file-list="false"  :on-success="handleAvatarSuccess3" :before-upload="beforeAvatarUpload">
+								<img v-if="ticketInfo.ticketthree" :src="ticketInfo.ticketthree" class="avatar">
+								<i v-else class="el-icon-plus avatar-uploader-icon"></i>
+							</el-upload>
+							<el-upload class="avatar-uploader" action="/sports/users/upload" :show-file-list="false"  :on-success="handleAvatarSuccess4" :before-upload="beforeAvatarUpload">
+								<img v-if="ticketInfo.ticketfour" :src="ticketInfo.ticketfour" class="avatar">
+								<i v-else class="el-icon-plus avatar-uploader-icon"></i>
+							</el-upload>
+						</el-form-item>
+					</el-form>
+					<span slot="footer" class="dialog-footer">
+						<el-button  type="primary" @click="changeTicket">保存</el-button>
+    					<el-button  @click="dialogVisible = false">取 消</el-button>
+ 					</span>
+				</el-dialog>
+
+			</div>
+		</div>
+
+		<script type="text/javascript">
+			var app = new Vue({
+				el: "#app",
+				data: {
+					ticketQuery: {
+						page: 1, //页数
+						count: 5, //每页几条
+						sportname: "", //搜索动态名称
+						stadiumname:""//搜索简介
+					},
+					states:"2",
+					tableTotal: 0,
+					tableData: [],
+					gameField: [],
+					dialogVisible: false,
+					ticketInfo: {
+						ticketone:'',
+						tickettwo:'',
+						ticketthree:'',
+						ticketfour:'',
+					},
+					multipleSelection: [],
+					rules:{
+						stadiumList: [
+				            { required: true, message: '请选择场馆', trigger: 'blur' }
+				          ],
+				          ticketname: [
+				        	  { required: true, message: '请输入票务名称', trigger: 'blur' }
+				          ],
+				          ticketprice: [
+				            { required: true, message: '请输入票务价格', trigger: 'blur' }
+				          ],
+				          ticketnumber: [
+				            { required: true, message: '请输入票务数量', trigger: 'blur' }
+				          ],
+				          buynotice: [
+				            { required: true, message: '请输入购买须知', trigger: 'blur' }
+				          ]
+				        }
+				},
+				methods: {
+					reviewSearch: function() {
+						reload();
+					},
+					handleSizeChange: function(val) {
+						this.ticketQuery.count = val;
+						this.ticketQuery.page = 1;
+						reload();
+					},
+					handleCurrentChange: function(val) {
+						this.ticketQuery.page = val;
+						reload();
+					},
+					showModel: function() {
+						this.dialogVisible = true;
+						getTiYu();
+						this.ticketInfo = {};
+					},
+					closeDialog(){
+						this.$refs.ticketInfo.resetFields();
+					},
+					beforeAvatarUpload(file) {
+				        const isJPG = file.type === 'image/jpeg';
+				        const isLt2M = file.size / 1024 / 1024 < 2;
+
+				        if (!isJPG) {
+				          this.$message.error('上传头像图片只能是 JPG 格式!');
+				        }
+				        if (!isLt2M) {
+				          this.$message.error('上传头像图片大小不能超过 2MB!');
+				        }
+				        return isJPG && isLt2M;
+				      },
+					 handleAvatarSuccess1(res, file) {
+							if(res != null) {
+								this.$refs.ticketInfo.validate(function(valid) {
+									if(valid) {
+										app.ticketInfo.ticketone = res;
+									}
+								});
+							}
+							this.$forceUpdate();
+						},
+						handleAvatarSuccess2(res, file) {
+							if(res != null) {
+								this.$refs.ticketInfo.validate(function(valid) {
+									if(valid) {
+										app.ticketInfo.tickettwo = res;
+									}
+								});
+							}
+							this.$forceUpdate();
+						},
+						handleAvatarSuccess3(res, file) {
+							if(res != null) {
+								this.$refs.ticketInfo.validate(function(valid) {
+									if(valid) {
+										app.ticketInfo.ticketthree = res;
+									}
+								});
+							}
+							this.$forceUpdate();
+						},
+						handleAvatarSuccess4(res, file) {
+							if(res != null) {
+								this.$refs.ticketInfo.validate(function(valid) {
+									if(valid) {
+										app.ticketInfo.ticketfour = res;
+									}
+								});
+							}
+							this.$forceUpdate();
+						},
+						changeTicket: function() {
+							this.$refs.ticketInfo.validate(function(valid) {
+							if(valid) {
+								app.ticketInfo.state = app.states;
+								var url = '';
+								if(app.ticketInfo.id == null) {
+									url = '/sports/ticket/addTicket';
+								} else {
+									url = '/sports/ticket/editTicket';
+								}
+								axios.post(url, app.ticketInfo)
+									.then(function(response) {
+										reload();
+									});
+								app.dialogVisible = false;
+							}
+							});
+					},
+					editticket: function(ticketInfo) {
+						edit(ticketInfo);
+					},
+					handleSelectionChange: function(val) {
+						this.multipleSelection = val;
+					},
+					deleteTicket: function() {
+						this.$confirm('此操作将永久删除该数据, 是否继续?', '提示', {
+							confirmButtonText: '确定',
+							cancelButtonText: '取消',
+							type: 'warning'
+						}).then(function() {
+							var ids = [];
+							var s = app.multipleSelection;
+							for(var index in s) {
+								ids.push(s[index].id);
+							}
+							axios.post('/sports/ticket/deleteTicket', ids)
+								.then(function(response) {
+									app.ticketQuery.page = 1;
+									reload();
+								});
+						})
+					}
+				}
+			});
+			function edit(ticketInfo){
+				axios.get('/sports/ticket/getTicketByID?id=' + ticketInfo.id)
+				.then(function(response) {
+					app.ticketInfo = response.data;
+					app.states = response.data.state.toString();
+					app.dialogVisible = true;
+				});
+			};
+			function getTiYu(){
+				axios.get('/sports/ticket/getSaiShiTiYu')
+						.then(function(response) {
+							app.gameField = response.data;
+						});
+			};
+			function reload() {
+				axios.post('/sports/ticket/getTicket', app.ticketQuery)
+					.then(function(response) {
+						app.tableTotal = response.data.gettotal;
+						app.tableData = response.data.getdynamic;
+					})
+			};
+			reload();
+			getTiYu();
+			
+		</script>
+
+	</body>

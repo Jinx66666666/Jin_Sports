@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>home.html</title>
+		<meta charset="utf-8" />
+		<script src="/sports/js/vue.js"></script>
+		<!-- 引入样式 -->
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<link rel="stylesheet" href="/sports/css/fonts/element-icons.woff">
+		<!-- 引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+		<script src="/sports/js/axios.min.js"></script>
+		<!-- 引入 ECharts 文件 -->
+ 	    <script src="/sports/js/echarts.min.js"></script>
+		<style>
+			.el-header,
+			.el-footer {
+				background-color: #B3C0D1;
+				color: #545c64;
+				text-align: center;
+				line-height: 60px;
+			}
+			
+			.el-aside {
+				background-color: #545c64;
+				color: #333;
+				text-align: left;
+				line-height: 200px;
+				height: 980px;
+			}
+			
+			.el-main {
+				background-color: #E9EEF3;
+				color: #333;
+				text-align: center;
+				line-height: 60px;
+				height: 1000px;
+			}
+			
+			body>.el-container {
+				margin-bottom: 40px;
+			}
+			
+			#app,
+			#app>.el-container,
+			.el-tab-pane {
+				height: 92%;
+			}
+			
+			.el-tabs__content {
+				height: 85%;
+			}
+			
+			.transition-box {
+				margin-bottom: 10px;
+				width: 800px;
+				height: 600px;
+				border-radius: 4px;
+				background-color: #409EFF;
+				text-align: center;
+				color: #fff;
+				padding: 40px 20px;
+				box-sizing: border-box;
+				margin-right: 20px;
+			}
+		</style>
+	</head>
+
+	<body style="margin: 0px">
+		<div id="app">
+			<el-container>
+				<el-header>
+					<h1 style="float: left; display: inline; margin: 2px; color: white">梦想体育局管理平台</h1>
+					<div style="float: right">
+						<el-button type="success" icon="el-icon-back" @click="toback" circle style="float:right;margin:10px">退出</el-button>
+						<el-button type="success" circle style="float:right;margin:10px;" @click="my">个人中心</el-button>
+					</div>
+					<div>
+						<h3>
+				当前时间：<span id="cg"> </span>
+			</h3>
+					</div>
+
+				</el-header>
+				<el-container>
+					<el-aside width="200px">
+						<el-menu class="el-menu-vertical-demo" background-color="#545c64" text-color="#fff" active-text-color="#ffd04b">
+							<el-submenu v-for="menu in menus" :index="menu.id">
+								<template slot="title"> <i class="el-icon-location"></i> <span>{{menu.name}}</span>
+								</template>
+								<el-menu-item-group>
+									<el-menu-item v-for="subMenu in menu.subMenu" @click="menuClick(subMenu)" :index="subMenu.id">{{subMenu.label}}</el-menu-item>
+								</el-menu-item-group>
+							</el-submenu>
+						</el-menu>
+					</el-aside>
+					<el-main style="padding: 0px">
+						<el-tabs type="border-card" v-model="editableTabsValue" closable @tab-remove="removeTab" style="width: 99%;height: 99%;">
+							<el-tab-pane label="欢迎页">
+							</el-tab-pane>
+							<el-tab-pane v-for="(item, index) in tabs" :key="item.id" :label="item.label" :name="item.id"> <iframe :src="item.url" style="width: 99%; height: 100%; border: 0"></iframe>
+							</el-tab-pane>
+						</el-tabs>
+					</el-main>
+				</el-container>
+			</el-container>
+			<el-dialog title="个人中心" :visible.sync="outerVisible" width="40%">
+				<el-form :model="empInfo">
+					<el-input type="hidden" autocomplete="off"></el-input>
+					<el-form-item label="姓名" prop="ename">
+						<el-input v-model="empInfo.ename" type="text" autocomplete="off" readonly style="width:400px;margin:10px"></el-input>
+					</el-form-item>
+					<el-form-item label="账号" prop="username">
+						<el-input v-model="empInfo.username" type="text" autocomplete="off" readonly style="width:400px;margin:10px"></el-input>
+					</el-form-item>
+					<el-form-item label="权限" prop="rname">
+						<el-input v-model="empInfo.rname" type="text" autocomplete="off" readonly style="width:400px;margin:10px"></el-input>
+					</el-form-item>
+				</el-form>
+				<el-dialog width="50%" title="修改密码" :visible.sync="innerVisible" append-to-body>
+					<el-form :model="info">
+						<el-input v-model="info.id" type="hidden" autocomplete="off"></el-input>
+						<el-form-item label="请修改账号" prop="username">
+							<el-input v-model="info.username" type="text" autocomplete="off" style="width:400px;margin:10px"></el-input>
+						</el-form-item>
+						<el-form-item label="请修改密码" prop="password">
+							<el-input v-model="info.password" type="text" autocomplete="off" style="width:400px;margin:10px"></el-input>
+						</el-form-item>
+					</el-form>
+					<div slot="footer" class="dialog-footer">
+						<el-button type="primary" @click="pword">确 定</el-button>
+					</div>
+				</el-dialog>
+				<div slot="footer" class="dialog-footer">
+					<el-button type="primary" @click="innerVisible = true">修改密码</el-button>
+				</div>
+			</el-dialog>
+		</div>
+		<script>
+			<!--这个cg就是span的id，初始化Date时间并转化为字符string类型,每1000毫秒，setInterval() 就会调用函数，直到被关闭。-->
+			setInterval("cg.innerHTML=new Date().toLocaleString()", 1000);
+		</script>
+		<script type="text/javascript">	        		
+			axios.get('/sports/emp/getPermission').then(function(response) {
+				app.menus = response.data;
+			});
+			var app = new Vue({
+				el: "#app",
+				data: {
+					menus: [],
+					tabs: [],
+					editableTabsValue: "0",
+					outerVisible: false,
+					innerVisible: false,
+					empInfo: {},
+					info: {},
+					readonly: true,
+					show: false
+
+				},
+
+				methods: {
+					pword: function() {
+						axios.post('/sports/emp/editPassword', app.info).then(
+							function(response) {
+								if(response.data.code == 200) {
+									//跳转
+									window.location.href = "/sports/home";
+								}
+							});
+					},
+					my: function() {
+						this.outerVisible = true;
+						axios.post('/sports/emp/getMy').then(function(response) {
+							console.log(response.data);
+							app.empInfo = response.data[0];
+						});
+
+					},
+					toback: function() {
+						axios.post('/sports/toback').then(function(response) {
+							window.location.reload(); //重新加载当前页面
+						});
+
+					},
+
+					menuClick: function(currentMenu) {
+						if(this.tabs.indexOf(currentMenu) == -1) {
+							this.tabs.push(currentMenu);
+						}
+						this.editableTabsValue = currentMenu.id;
+					},
+					removeTab: function(targetName) {
+
+						//targetName 要删除的名字
+						var tabs = this.tabs; // 数据源数组
+						var activeName = this.editableTabsValue; //当前被选中的名字
+						// 要删除的是否是被选中的  ：
+						if(activeName === targetName) {
+							tabs.forEach(function(tab, index) {
+								//要找到被选中的哪一个 在数组中的索引位置 
+								if(tab.id == targetName) {
+									//获取 被选中的 哪一个的 下一个 或者 上一个 
+									var nextTab = tabs[index + 1] ||
+										tabs[index - 1];
+									// 判断是否有 
+									if(nextTab) {
+										activeName = nextTab.id;
+									} else {
+										activeName = "0";
+									}
+								}
+
+							});
+						}
+						//重新切换被选中的
+						this.editableTabsValue = activeName;
+						//将要删除的 从数组中过滤掉
+						this.tabs = tabs.filter(function(tab) {
+							return tab.id != targetName;
+						});
+					}
+				}
+			});
+		</script>
+	</body>
+
+</html>

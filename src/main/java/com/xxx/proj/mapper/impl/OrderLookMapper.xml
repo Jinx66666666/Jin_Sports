@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.xxx.proj.mapper.IOrderLookMapper">
+ 
+ <!-- 分页+查询 -->
+	<sql id="orderlookQuery">
+
+	        <if test="ordernum != null and ordernum != ''">
+	           and o.ordernum  like CONCAT('%',#{ordernum},'%')
+	        </if>
+	        <if test="code != null and code != ''">
+	           and o.code  like CONCAT('%',#{code},'%')
+	        </if>
+	       
+	</sql>
+	
+	
+	<select id="getOrderLook" resultType="map">
+	      select o.id,o.ordernum,o.code,o.state,o.name
+	      from orderlook o 
+	      <include refid="orderlookQuery" />
+	      limit #{page},#{count}
+	</select>
+	
+	
+	
+	<select id="getTotal" resultType="java.lang.Integer">
+	      select count(*) c from orderlook o
+	      <where>
+	      <include refid="orderlookQuery" />
+	      </where> 
+	</select>
+	
+ 
+ <!-- 根据id获取订单状态 -->
+	<select id="getOrderLookById" resultType="com.xxx.proj.entity.OrderLook">
+	   select *  from  orderlook where id = #{id}
+	</select>
+ 
+ 
+ <!-- 修改订单核销 -->
+	<update id="editOrderlook">
+		update orderlook set  ordernum = #{ordernum}, code = #{code},state = #{state},name = #{name}
+		where id = #{id}
+	</update>
+<!-- 查询，用户导出excel -->
+	<select id="getExcelOrderLook" resultType="map">
+	 select o.id,o.ordernum,o.code,o.state
+	      from orderlook o 
+	      <include refid="orderlookQuery" />
+	</select>
+ </mapper>

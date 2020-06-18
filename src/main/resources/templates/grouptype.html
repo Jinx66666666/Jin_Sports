@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>组别</title>
+		<meta charset="utf-8" />
+
+		<script src="/sports/js/vue.js"></script>
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<script src="/sports/js/axios.min.js"></script>
+		<!-- 	引入样式 -->
+		<link rel="stylesheet" href="/sports/css/fonts/element-icons.woff">
+		<link rel="stylesheet" href="/sports/css/fonts/element-icons.ttf">
+		<!-- 	引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+	</head>
+
+	<body>
+		<div id="app">
+			<div>
+				<el-button type="success" @click="addGrouptype" icon="el-icon-plus" circle></el-button>
+				<el-button type="danger" icon="el-icon-delete" @click="removeGrouptype" circle></el-button>
+				组别名称:
+				<el-input placeholder="请输入组别名称" style="width:200px" v-model="pageGroup.name" clearable></el-input>
+				<el-button icon="el-icon-search" @click="searchCondition" circle></el-button>
+			</div>
+
+			<!-- 表格 -->
+			<el-table stripe :data="tableData" style="width: 100%" @selection-change="handleSelectionChange">
+
+				<el-table-column type="selection" width="55">
+				</el-table-column>
+				<el-table-column type="index" width="50" label="编号">
+				</el-table-column>
+				<!-- v-if="false" -->
+				<el-table-column prop="id" label="编号" width="180" v-if="false"> </el-table-column>
+				<el-table-column prop="gname" label="名称" width="180"></el-table-column>
+				<el-table-column prop="minpeople" label="最低参赛人数" width="180"></el-table-column>
+				<el-table-column prop="cost" label="参赛费用" width="180"></el-table-column>
+				<el-table-column prop="specialexplain" label="特别说明" width="180"></el-table-column>
+				<el-table-column prop="whethergroup" label="是否团体项目状态" width="180" :formatter="formatterState"></el-table-column>
+				<el-table-column prop="whetherpay" label="是否付费状态" width="180" :formatter="formatterState"></el-table-column>
+
+				<el-table-column label="操作">
+					<template slot-scope="scope">
+						<el-button size="mini" @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+
+			<!-- 分页 -->
+			<el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" background :current-page="pageGroup.page" :page-sizes="[5, 10, 15, 20]" :page-size="pageGroup.count" layout="total, sizes, prev, pager, next, jumper" :total="total">
+			</el-pagination>
+
+			<el-dialog title="组类别" :visible.sync="dialogVisible" width="50%" @close="closeDialog">
+
+				<el-form :label-position="labelPosition" :rules="rules" ref="ruleForm" :model="ruleForm" label-width="100px" class="demo-ruleForm" :inline="true">
+					<el-form-item label="id" prop="id" v-if="false">
+						<el-input v-model="ruleForm.id" ></el-input>
+					</el-form-item>
+
+					<el-form-item label="名称" prop="gname">
+						<el-input v-model="ruleForm.gname"></el-input>
+					</el-form-item>
+					<el-form-item label="是否团体项目">
+						<el-radio-group v-model="ruleForm.whethergroup" size="medium">
+							<el-radio border label="1">是</el-radio>
+							<el-radio border label="0">否</el-radio>
+						</el-radio-group>
+					</el-form-item><br>
+
+					<el-form-item label="最少人数" prop="minpeople">
+						<el-input v-model="ruleForm.minpeople" @keyup.native="numberminpeople"></el-input>
+					</el-form-item><br>
+					<el-form-item label="最多人数" prop="maxpeople">
+						<el-input v-model="ruleForm.maxpeople" @keyup.native="numbermaxpeople"></el-input>
+					</el-form-item>
+
+					<el-form-item label="是否付费" >
+						<el-radio-group v-model="ruleForm.whetherpay" size="medium"  @change="noPay">
+							<el-radio border label="1">是</el-radio>
+							<el-radio border label="0" >否</el-radio>
+						</el-radio-group>
+					</el-form-item>
+					<br>
+					<el-form-item label="参赛费用" prop="cost">
+						<el-input v-model="ruleForm.cost" auto-complete="off" @keyup.native="number"></el-input>
+					</el-form-item>
+
+					<br>
+
+					<el-form-item label="特别说明" prop="specialexplain">
+						<el-input v-model="ruleForm.specialexplain"></el-input>
+					</el-form-item>
+
+				</el-form>
+
+				<span slot="footer" class="dialog-footer">
+				    <el-button @click="dialogVisible = false">取 消</el-button>
+				    <el-button type="primary" @click="saveGrouptype">确 定</el-button>
+			  	</span>
+			</el-dialog>
+
+		</div>
+		<script>
+			var app = new Vue({
+				el: "#app",
+				data: {
+
+					labelPosition: 'left',
+					tableData: [],
+					pageGroup: {
+						name: "",
+						page: 1,
+						count: 5
+					},
+					total: '1',
+					dialogVisible: false,
+					ruleForm: {
+						whethergroup: '0',
+						whetherpay: '1'
+					},
+					multipleSelection: [],
+					rules: {
+						specialexplain: [{
+							required: true,
+							message: '请输入说明',
+							trigger: 'blur'
+						}
+					],
+						cost: [{
+							required: true,
+							message: '请输入参赛费用',	
+							trigger: 'blur'
+						},
+						{
+							validator: function(rule, value, callback) {
+								
+
+								if(app.ruleForm.whetherpay==1){  //1 付费    ，0不付费
+											if(value == '' || value == undefined || value == null) {
+												callback();
+											} else {
+												if(value <1) {
+													callback(new Error('付费，费用大于零'));
+												}else{
+												callback();
+													
+												}
+											}	
+								}else{
+									if(value == '' || value == undefined || value == null) {
+										callback();
+									} else {
+										if(value !=0) {
+											callback(new Error('不付费，请将费用调零'));
+										}else{
+										callback();
+											
+										}
+									}
+								}	
+								
+							},
+							trigger: 'blur'
+						}
+					
+					],
+						gname: [{
+								required: true,
+								message: '请输入用户名',
+								trigger: 'blur'
+							}
+						],
+						minpeople: [{
+								required: true,
+								message: '请输入最小参赛人数',
+								trigger: 'blur'
+							},
+							{
+								validator: function(rule, value, callback) {
+									if(value == '' || value == undefined || value == null) {
+										callback();
+									} else {
+										if(value <= 0) {
+											callback(new Error('人数最小为1'));
+										}else{
+											callback();
+											
+										}
+									}
+								},
+								trigger: 'blur'
+							}
+						],
+						maxpeople: [{
+							required: true,
+							message: '请输入最大参赛人数',
+							trigger: 'blur'
+						},
+						{
+							validator: function(rule, value, callback) {
+								if(value == '' || value == undefined || value == null) {
+									callback();
+								} else {
+									if(value < app.ruleForm.minpeople) {
+										callback(new Error('人数必须大于等于最小人数'))
+									}else{
+										callback();
+										
+									}
+								}
+							},
+							trigger: 'blur'
+						}
+					]
+						
+					}
+				},
+				methods: {
+					closeDialog(){
+						this.$refs.ruleForm.resetFields();
+					},
+					　number(){　　//费用
+					　　　app.ruleForm.cost=app.ruleForm.cost.replace(/[^\.\d]/g,'');
+					app.ruleForm.cost=app.ruleForm.cost.replace('.','');
+					　　},
+					　numbermaxpeople(){　　//最大人数，
+					　　　app.ruleForm.maxpeople=app.ruleForm.maxpeople.replace(/[^\.\d]/g,'');
+					app.ruleForm.maxpeople=app.ruleForm.maxpeople.replace('.','');
+					　　},
+					　numberminpeople(){　　//最小人数
+					　　　app.ruleForm.minpeople=app.ruleForm.minpeople.replace(/[^\.\d]/g,'');
+					app.ruleForm.minpeople=app.ruleForm.minpeople.replace('.','');
+					　　},
+					noPay:function(){  //0不付费
+						if(app.ruleForm.whetherpay==0){
+							app.ruleForm.cost=0;
+						}
+					},
+			
+
+					formatterState: function(row, column, cellValue, index) {
+						return cellValue == 0 ? "否" : "是";
+					},
+
+					handleSelectionChange: function(val) {
+						this.multipleSelection = val;
+					},
+					handleEdit: function(index, row) { //编辑
+
+						axios.get('/sports/grouptype/selectGrouptype?id=' + row.id).then(
+							function(response) {
+
+								app.ruleForm = response.data;
+							})
+						app.dialogVisible = true;
+					},
+					handleSizeChange: function(val) {
+						app.pageGroup.count = val;
+						app.pageGroup.page = 1;
+						selectAll();
+						console.log("每页 " + val + " 条");
+					},
+					handleCurrentChange: function(val) {
+						app.pageGroup.page = val;
+						selectAll();
+						console.log("当前页:" + val);
+					},
+					addGrouptype: function() { //新增
+						app.ruleForm = {
+							whethergroup: '0',
+							whetherpay: '1'
+						};
+
+						app.dialogVisible = true;
+					},
+					saveGrouptype: function() { //保存
+						this.$refs["ruleForm"].validate(function(valid) {
+							if(valid) {
+
+								axios.post('/sports/grouptype/saveGrouptype', app.ruleForm).then(
+									function(response) {
+										if(response.data.code == 200) {
+											app.$message({
+												message: response.data.msg,
+												type: 'success'
+											});
+											app.dialogVisible = false;
+											selectAll();
+										} else if(response.data.code == 300) {
+											app.$message({
+												message: response.data.msg,
+												type: 'warning'
+											});
+										} else {
+											app.$message.error(response.data.msg);
+										}
+
+									})
+							}
+						})
+					},
+					searchCondition: function() { //点击查询，
+						app.pageGroup.page = 1;
+						selectAll();
+					},
+					removeGrouptype: function() {
+						this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+							confirmButtonText: '确定',
+							cancelButtonText: '取消',
+							type: 'warning'
+						}).then(function() {
+							var ids = [];
+							var s = app.multipleSelection;
+							for(var index in s) { //for in 遍历的是对象 在Javascript
+								ids.push(s[index].id);
+							}
+							axios.post('/sports/grouptype/deletelist', ids).then(
+								function(response) {
+									app.pageGroup.page = 1;
+									selectAll();
+								})
+
+							app.$message({
+								type: 'success',
+								message: '删除成功!'
+							});
+						}).catch(function() {
+							app.$message({
+								type: 'info',
+								message: '已取消删除'
+							});
+						});
+
+					}
+				}
+			})
+
+			/* 进页面查询 */
+			function selectAll() {
+
+				axios.post('/sports/grouptype/getlist', app.pageGroup).then(
+					function(response) {
+						app.tableData = response.data.grouptypeList;
+						app.total = response.data.total;
+
+					})
+			}
+			selectAll();
+		</script>
+
+	</body>
+
+</html>

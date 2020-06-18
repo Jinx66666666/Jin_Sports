@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>免责声明</title>
+		<meta charset="utf-8" />
+		<!-- 
+				<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+		引入样式
+		<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+		引入组件库
+		<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
+
+		<script src="/sports/js/vue.js"></script>
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<script src="/sports/js/axios.min.js"></script>
+		<!-- 	引入样式 -->
+		<link rel="stylesheet" href="/sports/css/fonts/element-icons.woff">
+		<link rel="stylesheet" href="/sports/css/fonts/element-icons.ttf">
+		<!-- 	引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+	</head>
+
+	<body>
+		<div id="app">
+
+			<div>
+				<el-button type="success" @click="addDisclaimer" icon="el-icon-plus" circle></el-button>
+				<el-button type="danger" icon="el-icon-delete" @click="removeDisclaimer" circle></el-button>
+				免责声明名称:
+				<el-input placeholder="请输入免责声明名称" style="width:200px" v-model="pagemzsm.name" clearable></el-input>
+				<el-button icon="el-icon-search" @click="searchCondition" circle></el-button>
+			</div>
+			<el-table stripe :data="tableData" style="width: 100%" @selection-change="handleSelectionChange">
+
+				<el-table-column type="selection" width="150">
+				</el-table-column>
+				<el-table-column type="index" label="编号" >
+				</el-table-column>
+
+				<el-table-column prop="id" label="编号" type="none" v-if="false"> </el-table-column>
+				<el-table-column prop="disclaimer" label="免责声明名称" style="width:150px"> </el-table-column>
+
+				<!-- <el-table-column prop="content" label="内容"  width="180"> </el-table-column> -->
+				<el-table-column label="操作">
+					<template slot-scope="scope">
+						<el-button size="mini" @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+
+			<el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" background :current-page="pagemzsm.page" :page-sizes="[5, 10, 15, 20]" :page-size="pagemzsm.count" layout="total, sizes, prev, pager, next, jumper" :total="total">
+			</el-pagination>
+
+			<el-dialog title="免责声明" :visible.sync="dialogVisible" width="60%" @close="closeDialog">
+
+				<el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="110px" class="demo-ruleForm">
+					<el-form-item label="id" prop="id" v-if="false">
+						<el-input v-model="ruleForm.id"></el-input>
+					</el-form-item>
+					<el-form-item label="免责声明名称" prop="disclaimer">
+						<el-input v-model="ruleForm.disclaimer"></el-input>
+					</el-form-item>
+
+					<el-form-item label="内容" prop="content">
+						<el-input type="textarea" v-model="ruleForm.content" rows="10" cols="50"></el-input>
+					</el-form-item>
+
+				</el-form>
+
+				<span slot="footer" class="dialog-footer">
+				    <el-button @click="dialogVisible = false">取 消</el-button>
+				    <el-button type="primary" @click="saveDisclaimer">确 定</el-button>
+			  	</span>
+			</el-dialog>
+
+		</div>
+		<script>
+			var app = new Vue({
+				el: "#app",
+				data: {
+					rules: {
+						disclaimer: [{
+							required: true,
+							message: '请输入免责声明名称',
+							trigger: 'blur'
+						}],
+						content: [{
+							required: true,
+							message: '请输入免责声明内容',
+							trigger: 'blur'
+						}]
+					},
+					tableData: [],
+					pagemzsm: {
+						name: "",
+						page: 1,
+						count: 5
+					},
+					total: '1',
+					dialogVisible: false,
+					ruleForm: {},
+					multipleSelection: []
+				},
+				methods: {
+					
+					
+					closeDialog(){
+						this.$refs.ruleForm.resetFields();
+					},
+					handleSelectionChange: function(val) {
+						this.multipleSelection = val;
+					},
+					handleEdit: function(index, row) { //编辑
+
+						axios.get('/sports/disclaimer/selectDisclaimer?id=' + row.id).then(
+							function(response) {
+								app.ruleForm = response.data;
+							})
+						app.dialogVisible = true;
+					},
+					handleSizeChange: function(val) {
+						app.pagemzsm.count = val;
+						app.pagemzsm.page = 1;
+						selectAll();
+						/* console.log("每页 " + val + " 条"); */
+					},
+					handleCurrentChange: function(val) {
+						app.pagemzsm.page = val;
+						selectAll();
+						/* console.log("当前页:" + val); */
+					},
+					addDisclaimer: function() { //新增
+						app.ruleForm = {};
+						app.dialogVisible = true;
+					},
+					saveDisclaimer: function() { //保存
+						this.$refs["ruleForm"].validate(function(valid) {
+							if(valid) {
+								axios.post('/sports/disclaimer/saveDisclaimer', app.ruleForm).then(
+									function(response) {
+										if(response.data.code == 200) {
+											app.$message({
+												message: response.data.msg,
+												type: 'success'
+											});
+											app.dialogVisible = false;
+											selectAll();
+										} else if(response.data.code == 300) {
+											app.$message({
+												message: response.data.msg,
+												type: 'warning'
+											});
+										} else {
+											app.$message.error(response.data.msg);
+										}
+									})
+							}
+						})
+					},
+					searchCondition: function() { //点击查询，
+						app.pagemzsm.page = 1;
+						selectAll();
+					},
+					removeDisclaimer: function() {
+						this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+							confirmButtonText: '确定',
+							cancelButtonText: '取消',
+							type: 'warning'
+						}).then(function() {
+							var ids = [];
+							var s = app.multipleSelection;
+							for(var index in s) { //for in 遍历的是对象 在Javascript
+								ids.push(s[index].id);
+							}
+							axios.post('/sports/disclaimer/deletelist', ids).then(
+								function(response) {
+									app.pagemzsm.page = 1;
+									selectAll();
+								})
+							app.$message({
+								type: 'success',
+								message: '删除成功!'
+							});
+						}).catch(function() {
+							app.$message({
+								type: 'info',
+								message: '已取消删除'
+							});
+						});
+
+					}
+				}
+			})
+
+			/* 进页面查询 */
+			function selectAll() {
+				axios.post('/sports/disclaimer/getlist', app.pagemzsm).then(
+					function(response) {
+						app.tableData = response.data.disclaimerList;
+						app.total = response.data.total;
+
+					})
+			}
+			selectAll();
+		</script>
+
+	</body>
+
+</html>

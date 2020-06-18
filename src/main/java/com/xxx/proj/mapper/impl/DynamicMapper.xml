@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ 
+ 
+<mapper namespace="com.xxx.proj.mapper.IDynamicMapper">
+	<resultMap id="BaseResultMap" type="com.xxx.proj.entity.Dynamic">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="dynamictitle" jdbcType="VARCHAR" property="dynamictitle" />
+    <result column="dynamicinfo" jdbcType="VARCHAR" property="dynamicinfo" />
+    <result column="dynamicintro" jdbcType="VARCHAR" property="dynamicintro" />
+  </resultMap>
+	<!-- 查询 -->
+	<sql id="UserQuery">
+	        <if test="dynamictitle != null and dynamictitle != ''">
+	           and d.dynamictitle  like CONCAT('%',#{dynamictitle},'%')
+	        </if>
+	        <if test="dynamicintro != null and dynamicintro != ''">
+	           and d.dynamicintro  like CONCAT('%',#{dynamicintro},'%')
+	        </if>
+	</sql>
+	
+	<!-- 查询所有最新动态 -->
+	<select id="getDynamic" resultType="map">
+	      select *
+	      from dynamic d
+	      <where> 
+	      <include refid="UserQuery" />
+	      </where> 
+	      limit #{page},#{count}
+	</select>
+	
+	<select id="getTotal" resultType="java.lang.Integer">
+	      select count(*) c from dynamic d
+	      <where>
+	      <include refid="UserQuery" />
+	      </where> 
+	</select>
+	
+	<!-- 添加最新动态 -->
+	<insert id="addDynamic"  >
+	    insert into dynamic(dynamictitle,dynamicinfo,dynamicintro) values (#{dynamictitle},#{dynamicinfo},#{dynamicintro})
+	</insert>
+	
+	<!-- 删除最新动态 -->
+	<delete id="deleteDynamic" >
+			delete 
+			from dynamic
+			where dynamic.id in
+		<foreach collection="array" item="id"  open="("
+			separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+	<!-- 根据id获取最新动态 -->
+	<select id="getDynamicByID" resultType="com.xxx.proj.entity.Dynamic">
+	   select *  from  dynamic where id = #{id}
+	</select>
+	
+	<!-- 修改最新动态 -->
+	<update id="editDynamic">
+	    update dynamic set dynamictitle=#{dynamictitle},dynamicinfo=#{dynamicinfo},dynamicintro=#{dynamicintro} where id=#{id}
+	</update>
+</mapper>
+

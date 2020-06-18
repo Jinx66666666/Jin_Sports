@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>user.html</title>
+		<meta charset="utf-8" />
+		<!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+		引入样式
+		<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+		引入组件库
+		<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
+		<script src="/sports/js/vue.js"></script>
+		<script src="/sports/js/axios.min.js"></script>
+		<!-- 引入样式 -->
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<!-- 引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+		<style type="text/css">
+			.avatar-uploader .el-upload {
+				border: 1px dashed #d9d9d9;
+				border-radius: 6px;
+				cursor: pointer;
+				position: relative;
+				overflow: hidden;
+			}
+			
+			.avatar-uploader .el-upload:hover {
+				border-color: #409EFF;
+			}
+			
+			.avatar-uploader-icon {
+				font-size: 28px;
+				color: #8c939d;
+				width: 178px;
+				height: 178px;
+				line-height: 178px;
+				text-align: center;
+			}
+			
+			.avatar {
+				width: 178px;
+				height: 178px;
+				display: block;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="app">
+			<div>
+				<el-button type="success" icon="el-icon-plus" @click="showModel" circle></el-button>
+				<el-button type="danger" icon="el-icon-delete" circle @click="deleteUser"></el-button>
+				姓名:
+				<el-input v-model="userQuery.name" placeholder="请输入姓名" style="width:200px" clearable></el-input>
+				手机号:
+				<el-input v-model="userQuery.tel" placeholder="请输入手机号" style="width:200px" clearable></el-input>
+				注册起止时间:
+				<el-date-picker v-model="userQuery.beginDate" value-format="yyyy-MM-dd HH:mm:ss" align="right" type="datetime" placeholder="选择开始时间"></el-date-picker>
+				到:
+				<el-date-picker v-model="userQuery.endDate" value-format="yyyy-MM-dd HH:mm:ss" align="right" type="datetime" placeholder="选择结束时间"></el-date-picker>
+				<el-button icon="el-icon-search" circle @click="userSearch"></el-button>
+			</div>
+
+			<el-table :data="tableData" style="width: 100% ;height:90%" @selection-change="handleSelectionChange">
+				<el-table-column type="index" label="排序"></el-table-column>
+				<el-table-column type="selection"  width="55"></el-table-column>
+				<el-table-column prop="name" label="姓名" width="180">
+				</el-table-column>
+				<el-table-column prop="head" label="头像" width="180">
+					<template scope="scope">
+	            		<img :src="scope.row.head"  width="30" height="30" />
+	        		</template>
+				</el-table-column>
+				<el-table-column prop="tel" label="注册手机号" width="250">
+				</el-table-column>
+				<el-table-column prop="registerdate" label="注册时间" width="300" type="datetime" value-format="yyyy-MM-dd HH:mm:ss">
+				</el-table-column>
+				<el-table-column label="操作">
+					<template slot-scope="scope">
+						<el-button size="mini" @click="edituser(scope.row)">编辑</el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+			<div>
+				<el-pagination @size-change="handleSizeChange" :current-page="userQuery.page" @current-change="handleCurrentChange" :page-sizes="[5, 10, 15, 20]" :page-size="5" layout="total, sizes, prev, pager, next, jumper" :total="tableTotal">
+				</el-pagination>
+			</div>
+
+			<div>
+				<el-dialog title="用户信息" :visible.sync="dialogVisible" @close="closeDialog" width="30%">
+					<el-form :model="userInfo" enctype="multipart/form-data" :rules="rules" ref="userInfo"  label-width="100px" class="demo-ruleForm">
+						<el-form-item label="姓名" prop="name">
+							<input type="hidden" v-model="userInfo.id" />
+							<el-input v-model="userInfo.name" type="text" autocomplete="off"></el-input>
+						</el-form-item>
+						<el-form-item label="手机号" prop="tel">
+							<el-input v-model="userInfo.tel" type="text" autocomplete="off"></el-input>
+						</el-form-item>
+						<el-form-item label="密码" prop="password">
+							<el-input v-model="userInfo.password" type="text" autocomplete="off"></el-input>
+						</el-form-item>
+						<el-form-item label="头像" prop="head">
+							<el-upload class="avatar-uploader"
+							 action="/sports/users/upload" 
+							 :show-file-list="false" 
+							 :on-success="handleAvatarSuccess" 
+							 :before-upload="beforeAvatarUpload">
+								<img v-if="userInfo.head" :src="userInfo.head" class="avatar">
+								<i v-else class="el-icon-plus avatar-uploader-icon"></i>
+							</el-upload>
+						</el-form-item>
+						<el-form-item label="注册时间" prop="registerdate" >
+							<el-date-picker v-model="userInfo.registerdate" value-format="yyyy-MM-dd HH:mm:ss" type="datetime" ></el-date-picker>
+						</el-form-item>
+					</el-form>
+					<span slot="footer" class="dialog-footer">
+    					<el-button @click="dialogVisible = false">取 消</el-button>
+  						    <el-button type="primary" @click="changeUser">确 定</el-button>
+  					</span>
+				</el-dialog>
+			</div>
+		</div>
+
+		<script type="text/javascript">
+			var app = new Vue({
+				el: "#app",
+				data: {
+					userQuery: {
+						page: 1, //页数
+						count: 5, //每页几条
+						name: "", //搜索姓名
+						tel:"",//搜索电话号
+						beginDate: "", //搜索开始时间
+						endDate: "" //搜索结束时间
+					},
+					tableTotal: 0,
+					tableData: [],
+					dialogVisible: false,
+					userInfo: {
+						head: ""
+					},
+					multipleSelection: []
+					 ,
+					rules:{
+				          name: [
+				            { required: true, message: '请输入姓名', trigger: 'blur' }
+				          ],
+				          tel: [
+				            { validator:function(rule, value, callback){
+				            	if (!value) {
+				                    return callback(new Error('手机号不能为空'));
+				                  } else {
+				                    const reg = /^1[3|4|5|7|8][0-9]\d{8}$/
+				                    if (reg.test(value)) {
+				                      callback();
+				                    } else {
+				                      return callback(new Error('请输入正确的手机号'));
+				                    }
+				                  }
+				            }, trigger: 'blur' }
+				          ],
+				          password: [
+				            { required: true, message: '请输入密码', trigger: 'blur' }
+				          ]
+				        }
+				
+				},
+				methods:{
+					userSearch(){
+						reload();
+					},
+					/* beforeAvatarUpload(file) {
+						 let fd = new FormData();
+						    fd.append('files',file);//传文件
+						    axios.post('/sports/users/upload',fd).then(function(res){
+						            alert('成功');
+						    }) 
+						    return false  //屏蔽了action的默认上传
+					} */
+					beforeAvatarUpload(file) {
+				        const isJPG = file.type === 'image/jpeg';
+				        const isLt2M = file.size / 1024 / 1024 < 2;
+
+				        if (!isJPG) {
+				          this.$message.error('上传头像图片只能是 JPG 格式!');
+				        }
+				        if (!isLt2M) {
+				          this.$message.error('上传头像图片大小不能超过 2MB!');
+				        }
+				        return isJPG && isLt2M;
+				      },
+					handleAvatarSuccess(res, file,fileList) {
+						if(res != null) {
+							this.$refs.userInfo.validate(function(valid) {
+								if(valid) {
+									app.userInfo.head = res;
+								}
+							});
+						}
+						this.$forceUpdate();
+					},
+					handleSizeChange: function(val) {
+						this.userQuery.count = val;
+						this.userQuery.page = 1;
+						reload();
+					},
+					handleCurrentChange: function(val) {
+						this.userQuery.page = val;
+						reload();
+					},
+					closeDialog(){
+						this.$refs.userInfo.resetFields();
+					},
+					showModel: function() {
+						this.dialogVisible = true;
+						this.userInfo = {};
+						
+					},
+					
+					changeUser: function() {
+					this.$refs.userInfo.validate(function(valid) {
+						if(valid) {
+						var url = '';
+						if(app.userInfo.id == null) {
+							url = '/sports/users/addUser';
+						} else {
+							url = '/sports/users/editUser';
+						}
+						axios.post(url, app.userInfo)
+							.then(function(response) {
+								reload();
+							});
+						app.dialogVisible = false;
+						}
+						});
+					},
+					edituser: function(userInfo) {
+						axios.get('/sports/users/getUserByID?id=' + userInfo.id)
+							.then(function(response) {
+								app.userInfo = response.data;
+								app.dialogVisible = true;
+							});
+					},
+					handleSelectionChange: function(val) {
+						this.multipleSelection = val;
+					},
+					deleteUser: function() {
+						this.$confirm('此操作将永久删除该数据, 是否继续?', '提示', {
+							confirmButtonText: '确定',
+							cancelButtonText: '取消',
+							type: 'warning' 
+						}).then(function() {
+							var ids = [];
+							var s = app.multipleSelection;
+							for(var index in s) {
+								ids.push(s[index].id);
+							}
+							axios.post('/sports/users/deleteUsers', ids)
+							  	.then(function(response) {
+									app.userQuery.page = 1;
+									reload();
+								});
+						})
+					}
+				}
+			});
+
+			function reload() {
+				axios.post('/sports/users/getUsers', app.userQuery)
+					.then(function(response) {
+						app.tableTotal = response.data.gettotal;
+						app.tableData = response.data.getusers;
+					})	
+			}
+			reload();
+			
+		</script>
+
+	</body>

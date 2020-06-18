@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>赛事报名参赛组信息</title>
+		<meta charset="utf-8" />
+		<script src="/sports/js/vue.js"></script>
+		<!-- 引入样式 -->
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<link rel="stylesheet" href="/sports/css/element-icons.woff">
+		<!-- 引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+		<script src="/sports/js/axios.min.js"></script>
+	</head>
+
+	<body>
+		<div id="app">
+		 	<div>				
+				<span>组类别名称：</span>
+				<el-input v-model="jinTeamQuery.gname" placeholder="请输入组类别名称" style="width:200px;padding: 10px 66px 10px 10px" clearable ></el-input>
+				<span>队伍名称 ：</span>
+				<el-input v-model="jinTeamQuery.teamname"  placeholder="请输入队伍名称" style="width:200px;padding: 10px 66px 10px 10px" clearable></el-input>
+				<el-button icon="el-icon-search" circle @click="teamSearch"></el-button><br/>
+				<el-button type="success" icon="el-icon-plus" circle @click="showWin"></el-button>
+				<el-button type="danger" icon="el-icon-delete" circle @click ="deleteTeam">批量删除</el-button>
+			</div>
+			<el-table :data="tableData" stripe style="width: 100%;" @selection-change="handleSelectionChange">
+				<el-table-column type="index">
+				</el-table-column>
+				<el-table-column type="selection" width="55">
+				</el-table-column>
+				<el-table-column prop="gamename" label="赛事名称" width="180"> </el-table-column>
+				<el-table-column prop="gname" label="组类别名称" width="180"> </el-table-column>
+				<el-table-column prop="teamname" label="队伍名称" width="180"> </el-table-column>
+				<el-table-column prop="leadname" label="领队姓名" width="180"> </el-table-column>
+				<el-table-column prop="leadtel" label="领队电话" width="180"> </el-table-column>
+				
+				<el-table-column label="操作">
+			      <template slot-scope="scope">
+			        <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>        
+			      </template>
+		    	</el-table-column>
+			</el-table>
+			<div>
+				<el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" 
+				:page-sizes="[5, 10, 15, 20]" :page-size="5" layout="total, sizes, prev, pager, next, jumper" :total="tableTotal">
+				</el-pagination>
+			</div>
+			<el-dialog title="赛事报名参赛组添加" :visible.sync="dialogFormVisible" @close="closeDialog">
+				
+				<el-form :model="teamInfo" :rules="rules" ref="teamInfo" >
+					<el-input v-model="teamInfo.id" type="hidden" autocomplete="off"></el-input>
+					<el-form-item label="赛事及组别" prop="gameList">
+							<el-cascader expand-trigger="hover" :options="options" v-model="teamInfo.gameList">
+					</el-cascader>
+					</el-form-item>
+					<!-- <el-form-item label="赛事名称" prop="gamename">
+						<el-select v-model="teamInfo.gamename" placeholder="请选择赛事名称">
+	        				<el-option v-for = "gameinformation in gameinformationArr" :key="gameinformation.id" :label="gameinformation.gamename" :value = "gameinformation.gamename"></el-option>
+	     				 </el-select>
+     				 </el-form-item>					
+					<el-form-item label="组类别名称" prop="groupname">
+						<el-select v-model="teamInfo.groupname" placeholder="请选择组类别名称">
+	        				<el-option v-for = "grouptype in groupArr" :key="grouptype.id" :label="grouptype.gname" :value = "grouptype.gname"></el-option>
+	     				 </el-select>
+     				 </el-form-item> -->					
+					<el-form-item label="队伍名称" prop="teamname">
+						<el-input v-model="teamInfo.teamname" type="text" autocomplete="off" placeholder="请输入队伍名称"></el-input>
+					</el-form-item>
+					<el-form-item label="领队姓名" prop="leadname">
+						<el-input v-model="teamInfo.leadname" type="text" autocomplete="off" placeholder="请输入领队姓名"></el-input>
+					</el-form-item>
+					<el-form-item label="领队电话" prop="leadtel">
+						<el-input v-model="teamInfo.leadtel" type="text" placeholder="请输入领队电话" >
+						</el-date-picker>
+					</el-form-item>					
+				</el-form>
+				<div slot="footer" class="dialog-footer">
+					<el-button @click="dialogFormVisible = false">取 消</el-button>
+					<el-button type="primary" @click="changeTeam">确 定</el-button>
+				</div>
+			</el-dialog>
+		</div>
+
+		<script type="text/javascript">
+			var app = new Vue({
+				el: "#app",
+				data:{
+					jinTeamQuery: {
+						page: 1, //查询的页数
+						count: 5, //每页显示多少行
+						gname: "", //搜索的条件 ---  组类别名称
+						teamname: "", //搜索的条件 ---  队伍名称						
+					},				
+					tableData: [],
+					tableTotal: 0,
+					dialogFormVisible: false,
+					teamInfo:{},
+					gameinformationArr:[],
+					groupArr:[],
+					multipleSelection:[],
+					options:[],
+					rules:{
+						gameList: [{
+							required: true,
+							message: '请输入赛事及组别',
+							trigger:  'change' 
+						}
+					], 
+						teamname: [{
+							required: true,
+							message: '请输入队伍名称',
+							trigger: 'blur'
+						}
+					],
+						leadname: [{
+							required: true,
+							message: '请输入领队姓名',
+							trigger: 'blur'
+						}
+					],
+					leadtel:[
+		                  { required: true, message: '请输入手机号码', trigger: 'blur' },
+		                 {
+		                     validator: function (rule, value, callback) {
+		                         var MobileRegex = /^1[0-9]{10}$/;
+		                         if (!MobileRegex.test(value)) {
+		                             callback(new Error('手机号码格式不正确！'))
+		                         } else {
+		                             callback();
+		                         }
+		                     }, trigger: 'blur'
+		                 }
+		                ],
+					}
+				},
+				methods: {
+					closeDialog(){
+						this.$refs.teamInfo.resetFields();
+					},
+					handleEdit:function(jin){//编辑点击事件加载选中行数据						
+						axios.get('/sports/jin/getEditTeam?id=' + jin.id)
+						.then(function(response) {
+							app.teamInfo = response.data;
+							app.dialogFormVisible = true;
+						});	 
+					},
+					handleSelectionChange: function(val) {
+						this.multipleSelection = val;
+					},
+					handleSizeChange:function(val){//分页行数
+						this.jinTeamQuery.count = val;
+						this.jinTeamQuery.page = 1;
+						reload();
+					},
+					handleCurrentChange:function(val){//分页页数
+						this.jinTeamQuery.page = val;
+						reload();
+					},
+					teamSearch:function(){//查询
+						reload();					
+					},
+					showWin: function() {//打开模态窗口
+						this.dialogFormVisible = true;
+						this.teamInfo = {};
+					},
+					changeTeam:function(){//新增和编辑窗口确定事件
+						this.$refs["teamInfo"].validate(function(valid) {
+							if(valid) {
+
+						var url = "";
+						if(app.teamInfo.id == null){
+							url = "/sports/jin/addTeam";
+						}else{
+							url = "/sports/jin/edidTeam";							
+						}
+						axios.post(url, app.teamInfo)
+							.then(function(response) {							
+								reload();
+								if(response.data.code == 200) {
+									//提示信息
+									 app.$notify({
+								          title: '恭喜您！操作成功',
+								          message: '这是一条成功的提示消息',
+								          type: 'success',
+								          offset: 100
+								        });																
+								} else {
+									app.$notify.error({
+										title: '抱歉！操作失败',
+										message: '这是一条失败的提示消息',
+										offset: 100
+									});
+								}
+								app.dialogFormVisible = false;
+						});	
+						}
+						})
+					},
+					deleteTeam:function(){//删除
+						this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+          					confirmButtonText: '确定',
+					          cancelButtonText: '取消',
+					          type: 'warning'
+						 }).then(function(){
+						 	var ids = [];
+                             var s = app.multipleSelection;
+                             for(var index in s){
+                                 ids.push(s[index].id);
+                             }
+                            axios.post("/sports/jin/deleteTeam", ids)
+							.then(function(response) {
+							   app.jinTeamQuery.page = 1;
+								reload();
+						 	});
+						 });						
+					}
+				}
+			});
+			//加载表格数据
+			function reload() {
+				axios.post('/sports/jin/getTeamInfo', app.jinTeamQuery)
+					.then(function(response) {
+						app.tableData = response.data.teamDate;
+						app.tableTotal = response.data.teamTotal;
+					});				
+			}
+			reload();
+			//查询赛事信息
+			axios.post('/sports/jin/getGamename')
+			.then(function(response) {
+				app.gameinformationArr = response.data;
+			});
+			//查询组类别名称
+			axios.post('/sports/jin/getGroupname')
+			.then(function(response) {
+				app.groupArr = response.data;
+			});
+			//请求赛事组别二级联动
+			axios.post('/sports/jin/gameList')
+			.then(function(response) {
+				app.options = response.data;
+			});
+		</script>
+
+	</body>
+
+</html>

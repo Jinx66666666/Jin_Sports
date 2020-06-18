@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+
+<mapper namespace="com.xxx.proj.mapper.IStadiumticketMapper">
+	<!-- 分页+查询 -->
+	<sql id="stadiumticketQuery">
+
+		<if test="ordernum != null and ordernum != '' ">
+			and s.ordernum like CONCAT('%',#{ordernum},'%')
+		</if>
+	</sql>
+
+
+	<select id="getStadiumticket" resultType="map">
+		select s.id,
+		s.ordernum,s.orderdate,s.price,s.state,s.paymenttype,s.ticketid,s.loginid,s.number
+		from stadiumticket s
+		<where>
+			<include refid="stadiumticketQuery" />
+		</where>
+		limit #{page},#{count}
+	</select>
+
+
+
+	<select id="getTotal" resultType="java.lang.Integer">
+		select count(*) c from stadiumticket s
+		<where>
+			<include refid="stadiumticketQuery" />
+		</where>
+	</select>
+
+
+	<!-- 根据id获取场馆 -->
+	<select id="getStadiumticketById" resultType="com.xxx.proj.entity.Stadiumticket">
+		select * from stadiumticket where id = #{id}
+	</select>
+
+
+	<!-- 票务统计图 -->
+	<select id="getSurface" resultType="map">
+		select SUM(s1.number)number,s3.stadiumname FROM stadiumticket
+		s1,stadiumticketadd s2,stadium s3
+		where s1.ticketid = s2.id and s2.stadiumid = s3.id
+		GROUP BY s3.id
+	</select>
+</mapper>

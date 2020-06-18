@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.proj.mapper.IVideoMapper">
+  <resultMap id="BaseResultMap" type="com.xxx.proj.entity.Video">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="videotitle" jdbcType="VARCHAR" property="videotitle" />
+    <result column="videointroduce" jdbcType="VARCHAR" property="videointroduce" />
+    <result column="video" jdbcType="VARCHAR" property="video" />
+    <result column="videopicture" jdbcType="VARCHAR" property="videopicture" />
+    <result column="showtime" jdbcType="VARCHAR" property="showtime" />
+    <result column="begintime" jdbcType="TIMESTAMP" property="begintime" />
+    <result column="endtime" jdbcType="TIMESTAMP" property="endtime" />
+    <result column="showstate" jdbcType="VARCHAR" property="showstate" />
+    <result column="videopath" jdbcType="VARCHAR" property="videopath" />
+    <result column="jinvideo" jdbcType="VARCHAR" property="jinvideo" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, videotitle, videointroduce, video, videopicture, showtime, begintime, endtime, 
+    showstate, videopath, jinvideo
+  </sql>
+  <!-- 根据id获取员工 -->
+	<select id="getEditVideo" resultType="Video">
+	   select *  from  jin_video where id = #{id}
+	</select>
+  
+  <!-- 分页+查询 -->
+	<sql id="jinTeamQuery">
+	    <where>
+	        <if test="videotitle != null and videotitle != '' ">
+	           and e.videotitle  like CONCAT('%',#{videotitle},'%')
+	        </if>
+	        <if test="begintime != null and begintime != '' ">
+	           and e.begintime &gt;  #{begintime}
+	        </if>
+	        <if test="endtime != null and endtime != '' ">
+	           and e.endtime &lt;  #{endtime}
+	        </if>
+	    </where>
+	</sql>
+	
+	<select id="getVideo" resultType="map">
+	      select *
+	      from jin_video e 	      
+	      <include refid="jinTeamQuery" />
+	      ORDER BY e.id desc
+	      limit #{page},#{count}
+	</select>	
+	
+	<select id="getVideoTotal" resultType="java.lang.Integer">
+	      select count(*) c from jin_video e
+	      
+	      <include refid="jinTeamQuery" />
+	</select>
+  
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from jin_video
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteVideo" parameterType="java.lang.Integer">
+    delete from jin_video
+    where id in
+    <foreach collection="array" item="id"  open="("
+			separator="," close=")">
+			#{id}
+	</foreach> 
+  </delete>
+  <insert id="AddVideo" parameterType="com.xxx.proj.entity.Video">
+    insert into jin_video (id, videotitle, videointroduce, 
+      video, videopicture, showtime, 
+      begintime, endtime, showstate, 
+      videopath, jinvideo)
+    values (#{id,jdbcType=INTEGER}, #{videotitle,jdbcType=VARCHAR}, #{videointroduce,jdbcType=VARCHAR}, 
+      #{video,jdbcType=VARCHAR}, #{videopicture,jdbcType=VARCHAR}, #{showtime,jdbcType=VARCHAR}, 
+      #{begintime,jdbcType=TIMESTAMP}, #{endtime,jdbcType=TIMESTAMP}, #{showstate,jdbcType=VARCHAR}, 
+      #{videopath,jdbcType=VARCHAR}, #{jinvideo,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.xxx.proj.entity.Video">
+    insert into jin_video
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="videotitle != null">
+        videotitle,
+      </if>
+      <if test="videointroduce != null">
+        videointroduce,
+      </if>
+      <if test="video != null">
+        video,
+      </if>
+      <if test="videopicture != null">
+        videopicture,
+      </if>
+      <if test="showtime != null">
+        showtime,
+      </if>
+      <if test="begintime != null">
+        begintime,
+      </if>
+      <if test="endtime != null">
+        endtime,
+      </if>
+      <if test="showstate != null">
+        showstate,
+      </if>
+      <if test="videopath != null">
+        videopath,
+      </if>
+      <if test="jinvideo != null">
+        jinvideo,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="videotitle != null">
+        #{videotitle,jdbcType=VARCHAR},
+      </if>
+      <if test="videointroduce != null">
+        #{videointroduce,jdbcType=VARCHAR},
+      </if>
+      <if test="video != null">
+        #{video,jdbcType=VARCHAR},
+      </if>
+      <if test="videopicture != null">
+        #{videopicture,jdbcType=VARCHAR},
+      </if>
+      <if test="showtime != null">
+        #{showtime,jdbcType=VARCHAR},
+      </if>
+      <if test="begintime != null">
+        #{begintime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="endtime != null">
+        #{endtime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="showstate != null">
+        #{showstate,jdbcType=VARCHAR},
+      </if>
+      <if test="videopath != null">
+        #{videopath,jdbcType=VARCHAR},
+      </if>
+      <if test="jinvideo != null">
+        #{jinvideo,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xxx.proj.entity.Video">
+    update jin_video
+    <set>
+      <if test="videotitle != null">
+        videotitle = #{videotitle,jdbcType=VARCHAR},
+      </if>
+      <if test="videointroduce != null">
+        videointroduce = #{videointroduce,jdbcType=VARCHAR},
+      </if>
+      <if test="video != null">
+        video = #{video,jdbcType=VARCHAR},
+      </if>
+      <if test="videopicture != null">
+        videopicture = #{videopicture,jdbcType=VARCHAR},
+      </if>
+      <if test="showtime != null">
+        showtime = #{showtime,jdbcType=VARCHAR},
+      </if>
+      <if test="begintime != null">
+        begintime = #{begintime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="endtime != null">
+        endtime = #{endtime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="showstate != null">
+        showstate = #{showstate,jdbcType=VARCHAR},
+      </if>
+      <if test="videopath != null">
+        videopath = #{videopath,jdbcType=VARCHAR},
+      </if>
+      <if test="jinvideo != null">
+        jinvideo = #{jinvideo,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="editVideo" parameterType="com.xxx.proj.entity.Video">
+    update jin_video
+    set videotitle = #{videotitle,jdbcType=VARCHAR},
+      videointroduce = #{videointroduce,jdbcType=VARCHAR},
+      video = #{video,jdbcType=VARCHAR},
+      videopicture = #{videopicture,jdbcType=VARCHAR},
+      showtime = #{showtime,jdbcType=VARCHAR},
+      begintime = #{begintime,jdbcType=TIMESTAMP},
+      endtime = #{endtime,jdbcType=TIMESTAMP},
+      showstate = #{showstate,jdbcType=VARCHAR},
+      videopath = #{videopath,jdbcType=VARCHAR},
+      jinvideo = #{jinvideo,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

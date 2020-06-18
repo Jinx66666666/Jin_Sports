@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.proj.mapper.IJinTeamInfoMapper">
+  <resultMap id="BaseResultMap" type="com.xxx.proj.entity.JinTeamInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="gamename" jdbcType="VARCHAR" property="gamename" />
+    <result column="groupname" jdbcType="VARCHAR" property="groupname" />
+    <result column="teamname" jdbcType="VARCHAR" property="teamname" />
+    <result column="leadname" jdbcType="VARCHAR" property="leadname" />
+    <result column="leadtel" jdbcType="VARCHAR" property="leadtel" />
+    <result column="groupid" jdbcType="VARCHAR" property="groupid" />
+    <result column="gameinformationid" jdbcType="VARCHAR" property="gameinformationid" />
+    <result column="jin" jdbcType="VARCHAR" property="jin" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, gamename, groupname, teamname, leadname, leadtel, groupid, gameinformationid, 
+    jin
+  </sql>
+ <!--  赛事组别二级联动 -->
+ 	<resultMap type="map" id="selectGameGroup">
+ 		<id column = "id" property = "value"/>
+ 		<result column = "gamename" property = "label"/>
+ 		<collection column = "{gid = id}" property="children" javaType = "list"
+ 		select = "getGamename"></collection>	
+ 	</resultMap>
+ 	<select id = "getGamename" parameterType = "map" resultType = "map">
+ 		select gf.groupID value , gt.gname label
+ 		from groupfrom gf
+ 		join grouptype gt
+ 		on gf.groupID = gt.id
+ 		where gf.gameinID = #{gid}
+ 	</select>
+ 	<select id="gameList" resultMap="selectGameGroup">
+ 		select id, gamename
+ 		from gameinformation
+ 	</select>
+   <!-- 根据id获取当前行信息 -->
+	<select id="getEditTeam" resultType="JinTeamInfo">
+	   select *  from  jin_competingteaminfo where id = #{id}
+	</select>
+  <!-- 点击新增弹出dialog窗口查询赛事名称和类别名称-->
+	<!-- <select id = "getGamename" resultType = "map">
+		select id, gamename 
+		from gameinformation
+	</select> -->
+	
+	<select id = "getGroupname" resultType = "map">
+		select id,gname
+		from grouptype
+	</select>
+ <!--  分页和搜索组类别名称和队伍名称 -->
+  <sql id="JinTeamQuery">
+	    <where>
+	        <if test="gname != null and gname != ''">
+	           and gt.gname  like CONCAT('%',#{gname},'%')
+	        </if>
+	        <if test="teamname != null and teamname != '' ">
+	           and jin.teamname  like CONCAT('%',#{teamname},'%')
+	        </if>	        
+	    </where>
+	</sql>
+	
+	<select id="getTeamInfo" resultType="map">
+	    SELECT jin.id,g.gamename,gt.gname,jin.teamname,jin.leadname,jin,leadtel
+		FROM jin_competingteaminfo jin
+		join gameinformation g ON jin.gamename = g.id
+		join grouptype gt on jin.groupname = gt.id
+	      <include refid="JinTeamQuery" />
+	      ORDER BY jin.id desc
+	      limit #{page},#{count}
+	</select>	
+	
+	<select id="getTotal" resultType="java.lang.Integer">
+	      	select count(*) c 
+	      	FROM jin_competingteaminfo jin
+			join gameinformation g ON jin.gamename = g.id
+			join grouptype gt on jin.groupname = gt.id
+	      <include refid="JinTeamQuery" />
+	</select>
+	
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from jin_competingteaminfo
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteTeam" parameterType="java.lang.Integer">
+    delete from jin_competingteaminfo
+    where id in
+	<foreach collection="array" item="id"  open="("
+			separator="," close=")">
+	 #{id,jdbcType=INTEGER}
+	 </foreach>
+  </delete>
+  <insert id="addEmp">
+    insert into jin_competingteaminfo (id, gamename, groupname, 
+      teamname, leadname, leadtel, 
+      groupid, gameinformationid, jin
+      )
+    values (#{id,jdbcType=INTEGER}, #{gamename,jdbcType=VARCHAR}, #{groupname,jdbcType=VARCHAR}, 
+      #{teamname,jdbcType=VARCHAR}, #{leadname,jdbcType=VARCHAR}, #{leadtel,jdbcType=VARCHAR}, 
+      #{groupid,jdbcType=VARCHAR}, #{gameinformationid,jdbcType=VARCHAR}, #{jin,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.xxx.proj.entity.JinTeamInfo">
+    insert into jin_competingteaminfo
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="gamename != null">
+        gamename,
+      </if>
+      <if test="groupname != null">
+        groupname,
+      </if>
+      <if test="teamname != null">
+        teamname,
+      </if>
+      <if test="leadname != null">
+        leadname,
+      </if>
+      <if test="leadtel != null">
+        leadtel,
+      </if>
+      <if test="groupid != null">
+        groupid,
+      </if>
+      <if test="gameinformationid != null">
+        gameinformationid,
+      </if>
+      <if test="jin != null">
+        jin,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="gamename != null">
+        #{gamename,jdbcType=VARCHAR},
+      </if>
+      <if test="groupname != null">
+        #{groupname,jdbcType=VARCHAR},
+      </if>
+      <if test="teamname != null">
+        #{teamname,jdbcType=VARCHAR},
+      </if>
+      <if test="leadname != null">
+        #{leadname,jdbcType=VARCHAR},
+      </if>
+      <if test="leadtel != null">
+        #{leadtel,jdbcType=VARCHAR},
+      </if>
+      <if test="groupid != null">
+        #{groupid,jdbcType=VARCHAR},
+      </if>
+      <if test="gameinformationid != null">
+        #{gameinformationid,jdbcType=VARCHAR},
+      </if>
+      <if test="jin != null">
+        #{jin,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xxx.proj.entity.JinTeamInfo">
+    update jin_competingteaminfo
+    <set>
+      <if test="gamename != null">
+        gamename = #{gamename,jdbcType=VARCHAR},
+      </if>
+      <if test="groupname != null">
+        groupname = #{groupname,jdbcType=VARCHAR},
+      </if>
+      <if test="teamname != null">
+        teamname = #{teamname,jdbcType=VARCHAR},
+      </if>
+      <if test="leadname != null">
+        leadname = #{leadname,jdbcType=VARCHAR},
+      </if>
+      <if test="leadtel != null">
+        leadtel = #{leadtel,jdbcType=VARCHAR},
+      </if>
+      <if test="groupid != null">
+        groupid = #{groupid,jdbcType=VARCHAR},
+      </if>
+      <if test="gameinformationid != null">
+        gameinformationid = #{gameinformationid,jdbcType=VARCHAR},
+      </if>
+      <if test="jin != null">
+        jin = #{jin,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="edidTeam" parameterType="com.xxx.proj.entity.JinTeamInfo">
+    update jin_competingteaminfo
+    set gamename = #{gamename,jdbcType=VARCHAR},
+      groupname = #{groupname,jdbcType=VARCHAR},
+      teamname = #{teamname,jdbcType=VARCHAR},
+      leadname = #{leadname,jdbcType=VARCHAR},
+      leadtel = #{leadtel,jdbcType=VARCHAR},
+      groupid = #{groupid,jdbcType=VARCHAR},
+      gameinformationid = #{gameinformationid,jdbcType=VARCHAR},
+      jin = #{jin,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

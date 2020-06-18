@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ 
+ 
+<mapper namespace="com.xxx.proj.mapper.IReviewMapper">
+	<resultMap id="BaseResultMap" type="com.xxx.proj.entity.GoodReview">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="reviewtitle" jdbcType="VARCHAR" property="reviewtitle" />
+    <result column="reviewdetailedinfo" jdbcType="VARCHAR" property="reviewdetailedinfo" />
+    <result column="state" jdbcType="INTEGER" property="state" />
+    <result column="reviewintro" jdbcType="VARCHAR" property="reviewintro" />
+  </resultMap>
+	<!-- 查询 -->
+	<sql id="UserQuery">
+
+	        <if test="reviewtitle != null and reviewtitle != ''">
+	           and r.reviewtitle  like CONCAT('%',#{reviewtitle},'%')
+	        </if>
+	        <if test="reviewintro != null and reviewintro != ''">
+	           and r.reviewintro  like   
+	           CONCAT('%',#{reviewintro},'%')
+	        </if>
+	</sql>
+	
+	<!-- 查询所有精彩回顾 -->
+	<select id="getReview" resultType="map">
+	      select *
+	      from goodreview r
+	      <where> 
+	      <include refid="UserQuery" />
+	      </where> 
+	      limit #{page},#{count}
+	</select>
+	
+	<select id="getTotal" resultType="java.lang.Integer">
+	      select count(*) c from goodreview r
+	      <where>
+	      <include refid="UserQuery" />
+	      </where> 
+	</select>
+	
+	<!-- 添加精彩回顾 -->
+	<insert id="addReview"  >
+	    insert into goodreview(reviewtitle,reviewdetailedinfo,state,reviewintro) values (#{reviewtitle},#{reviewdetailedinfo},#{state},#{reviewintro})
+	</insert>
+	
+	<!-- 删除精彩回顾 -->
+	<delete id="deleteReview" >
+			delete 
+			from goodreview
+			where goodreview.id in
+		<foreach collection="array" item="id"  open="("
+			separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+	
+	<!-- 根据id获取精彩回顾 -->
+	<select id="getReviewByID" resultType="com.xxx.proj.entity.GoodReview">
+	   select *  from  goodreview where id = #{id}
+	</select>
+	
+	<!-- 修改精彩回顾 -->
+	<update id="editReview">
+	    update goodreview set reviewtitle=#{reviewtitle},reviewdetailedinfo=#{reviewdetailedinfo},state=#{state},reviewintro=#{reviewintro} where id=#{id}
+	</update>
+	
+</mapper>
+

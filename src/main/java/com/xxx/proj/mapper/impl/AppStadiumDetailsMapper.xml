@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.xxx.proj.mapper.IAppStadiumDetailsMapper">
+ 
+
+ 
+ 	<resultMap type="map" id="getStadium">
+		<id column="id" property="id" />
+		<result column="sportaddress" property="sportaddress" />
+		<result column="stadiumintro" property="stadiumintro" />
+		<result column="showone" property="showone" />
+		<result column="stadiumname" property="stadiumname" />
+		<collection column="{pid=id}" property="stadium" javaType="list"
+			select="getAppDetails" />
+	</resultMap>
+
+	<select id="getStadiumDetails" parameterType="map" resultMap="getStadium">
+		SELECT s2.id, s1.sportaddress,s2.stadiumintro,s2.showone
+		FROM sportadd s1 , stadium s2
+		WHERE s1.id = s2.sportid and state = 1 and s2.id = #{id}
+	</select>
+
+	<select id="getAppDetails" parameterType="map" resultType="map">
+	
+		SELECT s2.id, s2.ticketname,s1.stadiumname,s1.showone,s2.ticketprice,s1.stadiumintro,s2.buynotice,
+		(s2.ticketnumber - (SELECT IFNULL(SUM(s4.number),0)
+		FROM stadiumticket s4 , stadiumticketadd s5 ,stadium s6
+		WHERE s4.ticketid = s5.id AND s6.id = s5.stadiumid AND s5.state = 1 AND s5.stadiumid = #{pid}))ticketnumber
+		FROM  stadium s1,stadiumticketadd s2
+		WHERE  s1.id=s2.stadiumid AND s1.state = 1 and s2.state = 1  AND s2.stadiumid = #{pid}
+	</select>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</mapper>

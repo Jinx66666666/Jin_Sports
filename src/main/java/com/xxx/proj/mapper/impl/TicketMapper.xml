@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ 
+ 
+<mapper namespace="com.xxx.proj.mapper.ITicketMapper">
+	<resultMap id="BaseResultMap" type="com.xxx.proj.entity.Ticket">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="stadiumid" jdbcType="INTEGER" property="stadiumid" />
+    <result column="sportid" jdbcType="INTEGER" property="sportid" />
+    <result column="ticketname" jdbcType="VARCHAR" property="ticketname" />
+    <result column="ticketprice" jdbcType="VARCHAR" property="ticketprice" />
+    <result column="beginbusiness" jdbcType="VARCHAR" property="beginbusiness" />
+    <result column="endbusiness" jdbcType="VARCHAR" property="endbusiness" />
+    <result column="ticketnumber" jdbcType="INTEGER" property="ticketnumber" />
+    <result column="buynotice" jdbcType="VARCHAR" property="buynotice" />
+    <result column="ticketone" jdbcType="VARCHAR" property="ticketone" />
+    <result column="tickettwo" jdbcType="VARCHAR" property="tickettwo" />
+    <result column="ticketthree" jdbcType="VARCHAR" property="ticketthree" />
+    <result column="ticketfour" jdbcType="VARCHAR" property="ticketfour" />
+  </resultMap>
+	<!-- 查询 -->
+	<sql id="TicketQuery">
+	        <if test="sportname != null and sportname != ''">
+	           and sp.sportname  like CONCAT('%',#{sportname},'%')
+	        </if>
+	        <if test="stadiumname != null and stadiumname != ''">
+	           and s.stadiumname  like CONCAT('%',#{stadiumname},'%')
+	        </if>
+	</sql>
+	
+	<!--体育场 体育馆 级联查询 -->
+
+	<resultMap type="map" id="selectSaiShiMap">
+		<id column="id" property="value" />
+		<result column="sportname" property="label" />
+		<collection column="{pid=id}" property="children" javaType="list"
+			select="getSaiShiChangGuan" />
+	</resultMap>
+
+	<select id="getSaiShiTiYu" resultMap="selectSaiShiMap">
+		SELECT id, sportname
+		from
+		sportadd s
+	</select>
+	<select id="getSaiShiChangGuan" parameterType="map" resultType="map">
+		SELECT sta.id value,sta.stadiumname label
+		from sportadd sp
+		LEFT JOIN
+		stadium sta ON sp.id=sta.sportid
+		where sp.id=#{pid}
+	</select>
+	
+	<!-- 查询所有票务-->
+	<select id="getTicket" resultType="map">
+	      select  st.id,sp.sportname,s.stadiumname,st.ticketname,st.ticketprice
+	      FROM stadiumticketadd st 
+		  INNER JOIN stadium s ON st.stadiumid =s.id
+		  INNER JOIN sportadd sp  ON  s.sportid =sp.id
+	      <where> 
+	      <include refid="TicketQuery" />
+	      </where>
+	      order by id desc 
+	      limit #{page},#{count}
+	</select>
+	
+	<select id="getTotal" resultType="java.lang.Integer">
+	      select count(*) c from stadiumticketadd st
+	      INNER JOIN stadium s ON st.stadiumid =s.id
+		  INNER JOIN sportadd sp  ON  s.sportid =sp.id
+	      <where>
+	      <include refid="TicketQuery" />
+	      </where> 
+	</select>
+	
+	<!-- 添加票务-->
+	<insert id="addTicket"  >
+	    insert into stadiumticketadd(stadiumid,sportsid,ticketname,ticketprice,beginbusiness,endbusiness,ticketnumber,buynotice,ticketone,tickettwo,ticketthree,ticketfour,state) 
+	    values (#{stadiumid},#{sportsid},#{ticketname},#{ticketprice},#{beginbusiness},#{endbusiness},#{ticketnumber},#{buynotice},#{ticketone},#{tickettwo},#{ticketthree},#{ticketfour},#{state})
+	</insert>
+	
+	<!-- 删除票务 -->
+	<delete id="deleteTicket" >
+			delete 
+			from stadiumticketadd 
+			where id in
+		<foreach collection="array" item="id"  open="("
+			separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+	
+	<!-- 根据id获取票务 -->
+	<select id="getTicketByID" resultType="com.xxx.proj.entity.Ticket">
+	   select  st.*,sp.sportname,s.stadiumname
+			FROM stadiumticketadd st 
+			INNER JOIN stadium s ON st.stadiumid =s.id
+			INNER JOIN sportadd sp  ON  s.sportid =sp.id
+			where st.id=#{id}
+	</select>
+	
+	<!-- 修改票务 -->
+	<update id="editTicket">
+	    update stadiumticketadd set 
+	    stadiumid=#{stadiumid},sportsid=#{sportsid},ticketname=#{ticketname},ticketprice=#{ticketprice},
+	    beginbusiness=#{beginbusiness},endbusiness=#{endbusiness},ticketnumber=#{ticketnumber},
+	    buynotice=#{buynotice},ticketone=#{ticketone},tickettwo=#{tickettwo},
+	    ticketthree=#{ticketthree},ticketfour=#{ticketfour},state=#{state}
+	    where id=#{id}
+	</update>
+</mapper>
+

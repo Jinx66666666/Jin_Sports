@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.proj.mapper.GameinformationMapper">
+	<resultMap id="BaseResultMap" type="com.xxx.proj.entity.Gameinformation">
+		<id column="id" jdbcType="INTEGER" property="id" />
+		<result column="gamename" jdbcType="VARCHAR" property="gamename" />
+		<result column="sumpeople" jdbcType="INTEGER" property="sumpeople" />
+		<result column="disclaimerID" jdbcType="INTEGER" property="disclaimerid" />
+		<result column="applydate" jdbcType="TIMESTAMP" property="applydate" />
+		<result column="cutdate" jdbcType="TIMESTAMP" property="cutdate" />
+		<result column="begindate" jdbcType="TIMESTAMP" property="begindate" />
+		<result column="enddate" jdbcType="TIMESTAMP" property="enddate" />
+		<result column="groupfrom" jdbcType="VARCHAR" property="groupfrom" />
+		<result column="groupID" jdbcType="INTEGER" property="groupid" />
+		<result column="stadiumID" jdbcType="INTEGER" property="stadiumid" />
+		<result column="state" jdbcType="INTEGER" property="state" />
+		<result column="picture" jdbcType="VARCHAR" property="picture" />
+		<result column="sportID" jdbcType="INTEGER" property="sportid" />
+		<result column="manipuler" jdbcType="VARCHAR" property="manipuler" />
+	</resultMap>
+	<resultMap extends="BaseResultMap" id="ResultMapWithBLOBs"
+		type="com.xxx.proj.entity.Gameinformation">
+		<result column="introduce" jdbcType="LONGVARCHAR" property="introduce" />
+	</resultMap>
+	<sql id="Base_Column_List">
+		id, gamename, sumpeople, disclaimerID, applydate, cutdate,
+		begindate,
+		enddate, groupfrom,
+		groupID, stadiumID, state, picture,
+		sportID, manipuler
+	</sql>
+	<sql id="Blob_Column_List">
+		introduce
+	</sql>
+
+
+
+	<!--体育场 体育馆 级联查询 -->
+
+	<resultMap type="map" id="selectSaiShiMap">
+		<id column="id" property="value" />
+		<result column="sportname" property="label" />
+		<collection column="{pid=id}" property="children" javaType="list"
+			select="getSaiShiChangGuan" />
+	</resultMap>
+
+	<select id="getSaiShiTiYu" resultMap="selectSaiShiMap">
+		SELECT id, sportname
+		from
+		sportadd s
+	</select>
+
+	<select id="getSaiShiChangGuan" parameterType="map" resultType="map">
+		SELECT sta.id value,sta.stadiumname label
+		from sportadd sp
+		LEFT JOIN
+		stadium sta ON sp.id=sta.sportid
+		where sp.id=#{pid}
+	</select>
+
+	<!-- 查询所有 组别 -->
+	<select id="getGroupAll" resultType="map">
+		select *
+		from grouptype
+	</select>
+	<!-- 倒叙免责声明 -->
+	<select id="getDisclaimerList" resultType="map">
+		select * from
+		disclaimer
+		ORDER BY id desc
+	</select>
+
+	<!-- 名字查询存在数量 -->
+	<select id="selectByName" resultType="int">
+		select
+		count(*)
+		from
+		gameinformation
+		where gamename = #{gamename}
+	</select>
+
+
+	<!--分页加条件查询 -->
+	<sql id="getReload">
+		<where>
+
+			<if test="name!=null">
+				and g.gamename like '%${name}%'
+			</if>
+			<if test="begindate != null and begindate != '' ">
+				and g.begindate &gt;= #{begindate}
+			</if>
+			<if test="enddate != null and enddate != '' ">
+				and enddate &lt;= #{enddate}
+			</if>
+
+			<if test="applydate != null and applydate != '' ">
+				and g.applydate &gt;= #{applydate}
+			</if>
+			<if test="cutdate != null and cutdate != '' ">
+				and cutdate &lt;= #{cutdate}
+			</if>
+		</where>
+	</sql>
+	<select id="getReloadList" resultType="map">
+		select
+		g.*,d.disclaimer,(select SUM(gf.number) FROM groupfrom gf where
+		gf.gameinID=g.id) as numbers,s.sportname
+		from gameinformation g
+		join
+		disclaimer d
+		on g.disclaimerID=d.id
+		join sportadd s
+		on g.sportID= s.id
+		ORDER BY g.id desc
+		limit #{page},#{count}
+
+	</select>
+
+	<select id="getReloadCount" resultType="java.lang.Integer">
+		select count(*) c from gameinformation g
+		<include refid="getReload" />
+	</select>
+
+
+	<!--插入一条数据 -->
+	<insert id="insertSelective" parameterType="com.xxx.proj.entity.Gameinformation"
+		useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+		insert into gameinformation
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				id,
+			</if>
+			<if test="gamename != null">
+				gamename,
+			</if>
+			<if test="sumpeople != null">
+				sumpeople,
+			</if>
+			<if test="disclaimerid != null">
+				disclaimerID,
+			</if>
+			<if test="applydate != null">
+				applydate,
+			</if>
+			<if test="cutdate != null">
+				cutdate,
+			</if>
+			<if test="begindate != null">
+				begindate,
+			</if>
+			<if test="enddate != null">
+				enddate,
+			</if>
+			<if test="groupfrom != null">
+				groupfrom,
+			</if>
+			<if test="groupid != null">
+				groupID,
+			</if>
+			<if test="stadiumid != null">
+				stadiumID,
+			</if>
+			<if test="state != null">
+				state,
+			</if>
+			<if test="picture != null">
+				picture,
+			</if>
+			<if test="sportid != null">
+				sportID,
+			</if>
+			<if test="manipuler != null">
+				manipuler,
+			</if>
+			<if test="introduce != null">
+				introduce,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				#{id,jdbcType=INTEGER},
+			</if>
+			<if test="gamename != null">
+				#{gamename,jdbcType=VARCHAR},
+			</if>
+			<if test="sumpeople != null">
+				#{sumpeople,jdbcType=INTEGER},
+			</if>
+			<if test="disclaimerid != null">
+				#{disclaimerid,jdbcType=INTEGER},
+			</if>
+			<if test="applydate != null">
+				#{applydate,jdbcType=TIMESTAMP},
+			</if>
+			<if test="cutdate != null">
+				#{cutdate,jdbcType=TIMESTAMP},
+			</if>
+			<if test="begindate != null">
+				#{begindate,jdbcType=TIMESTAMP},
+			</if>
+			<if test="enddate != null">
+				#{enddate,jdbcType=TIMESTAMP},
+			</if>
+			<if test="groupfrom != null">
+				#{groupfrom,jdbcType=VARCHAR},
+			</if>
+			<if test="groupid != null">
+				#{groupid,jdbcType=INTEGER},
+			</if>
+			<if test="stadiumid != null">
+				#{stadiumid,jdbcType=INTEGER},
+			</if>
+			<if test="state != null">
+				#{state,jdbcType=INTEGER},
+			</if>
+			<if test="picture != null">
+				#{picture,jdbcType=VARCHAR},
+			</if>
+			<if test="sportid != null">
+				#{sportid,jdbcType=INTEGER},
+			</if>
+			<if test="manipuler != null">
+				#{manipuler,jdbcType=VARCHAR},
+			</if>
+			<if test="introduce != null">
+				#{introduce,jdbcType=LONGVARCHAR},
+			</if>
+		</trim>
+	</insert>
+
+	<!-- 赛事开启 -->
+	<update id="handleOpen">
+		UPDATE gameinformation g set
+		g.manipuler=#{manipuler,jdbcType=VARCHAR} , g.state=1
+		where
+		g.id=#{id,jdbcType=INTEGER}
+	</update>
+	<!-- 赛事关闭 -->
+	<update id="handleClose">
+		UPDATE gameinformation g set
+		g.manipuler=#{manipuler,jdbcType=VARCHAR} , g.state=2
+		where
+		g.id=#{id,jdbcType=INTEGER}
+	</update>
+
+
+
+	<!-- 删除赛事 -->
+	<delete id="deleteGameInfoList">
+		delete from gameinformation
+		where id in
+		<foreach collection="array" item="id" open="(" separator=","
+			close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+
+	<update id="updateStadiemOpen">
+		update stadium s
+		SET s.state=0
+		where s.id=#{stadiumid}
+	</update>
+
+	<update id="updateStadiemClose">
+		update stadium s
+		SET s.state=1
+		where s.id=#{stadiumid}
+	</update>
+
+
+
+
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer"
+		resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from gameinformation
+		where id = #{id,jdbcType=INTEGER}
+	</select>
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from
+		gameinformation
+		where id = #{id,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="com.xxx.proj.entity.Gameinformation">
+		insert into gameinformation
+		(id, gamename, sumpeople,
+		disclaimerID, applydate, cutdate,
+		begindate,
+		enddate, groupfrom,
+		groupID, stadiumID, state,
+		picture, sportID,
+		manipuler,
+		introduce)
+		values (#{id,jdbcType=INTEGER},
+		#{gamename,jdbcType=VARCHAR},
+		#{sumpeople,jdbcType=INTEGER},
+		#{disclaimerid,jdbcType=INTEGER}, #{applydate,jdbcType=TIMESTAMP},
+		#{cutdate,jdbcType=TIMESTAMP},
+		#{begindate,jdbcType=TIMESTAMP},
+		#{enddate,jdbcType=TIMESTAMP},
+		#{groupfrom,jdbcType=VARCHAR},
+		#{groupid,jdbcType=INTEGER}, #{stadiumid,jdbcType=INTEGER},
+		#{state,jdbcType=INTEGER},
+		#{picture,jdbcType=VARCHAR},
+		#{sportid,jdbcType=INTEGER},
+		#{manipuler,jdbcType=VARCHAR},
+		#{introduce,jdbcType=LONGVARCHAR})
+	</insert>
+	<update id="updateByPrimaryKeySelective" parameterType="com.xxx.proj.entity.Gameinformation">
+		update gameinformation
+		<set>
+			<if test="gamename != null">
+				gamename = #{gamename,jdbcType=VARCHAR},
+			</if>
+			<if test="sumpeople != null">
+				sumpeople = #{sumpeople,jdbcType=INTEGER},
+			</if>
+			<if test="disclaimerid != null">
+				disclaimerID = #{disclaimerid,jdbcType=INTEGER},
+			</if>
+			<if test="applydate != null">
+				applydate = #{applydate,jdbcType=TIMESTAMP},
+			</if>
+			<if test="cutdate != null">
+				cutdate = #{cutdate,jdbcType=TIMESTAMP},
+			</if>
+			<if test="begindate != null">
+				begindate = #{begindate,jdbcType=TIMESTAMP},
+			</if>
+			<if test="enddate != null">
+				enddate = #{enddate,jdbcType=TIMESTAMP},
+			</if>
+			<if test="groupfrom != null">
+				groupfrom = #{groupfrom,jdbcType=VARCHAR},
+			</if>
+			<if test="groupid != null">
+				groupID = #{groupid,jdbcType=INTEGER},
+			</if>
+			<if test="stadiumid != null">
+				stadiumID = #{stadiumid,jdbcType=INTEGER},
+			</if>
+			<if test="state != null">
+				state = #{state,jdbcType=INTEGER},
+			</if>
+			<if test="picture != null">
+				picture = #{picture,jdbcType=VARCHAR},
+			</if>
+			<if test="sportid != null">
+				sportID = #{sportid,jdbcType=INTEGER},
+			</if>
+			<if test="manipuler != null">
+				manipuler = #{manipuler,jdbcType=VARCHAR},
+			</if>
+			<if test="introduce != null">
+				introduce = #{introduce,jdbcType=LONGVARCHAR},
+			</if>
+		</set>
+		where id = #{id,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xxx.proj.entity.Gameinformation">
+		update
+		gameinformation
+		set gamename = #{gamename,jdbcType=VARCHAR},
+		sumpeople =
+		#{sumpeople,jdbcType=INTEGER},
+		disclaimerID =
+		#{disclaimerid,jdbcType=INTEGER},
+		applydate =
+		#{applydate,jdbcType=TIMESTAMP},
+		cutdate =
+		#{cutdate,jdbcType=TIMESTAMP},
+		begindate =
+		#{begindate,jdbcType=TIMESTAMP},
+		enddate =
+		#{enddate,jdbcType=TIMESTAMP},
+		groupfrom =
+		#{groupfrom,jdbcType=VARCHAR},
+		groupID = #{groupid,jdbcType=INTEGER},
+		stadiumID = #{stadiumid,jdbcType=INTEGER},
+		state =
+		#{state,jdbcType=INTEGER},
+		picture = #{picture,jdbcType=VARCHAR},
+		sportID = #{sportid,jdbcType=INTEGER},
+		manipuler =
+		#{manipuler,jdbcType=VARCHAR},
+		introduce =
+		#{introduce,jdbcType=LONGVARCHAR}
+		where id = #{id,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKey" parameterType="com.xxx.proj.entity.Gameinformation">
+		update
+		gameinformation
+		set gamename = #{gamename,jdbcType=VARCHAR},
+		sumpeople =
+		#{sumpeople,jdbcType=INTEGER},
+		disclaimerID =
+		#{disclaimerid,jdbcType=INTEGER},
+		applydate =
+		#{applydate,jdbcType=TIMESTAMP},
+		cutdate =
+		#{cutdate,jdbcType=TIMESTAMP},
+		begindate =
+		#{begindate,jdbcType=TIMESTAMP},
+		enddate =
+		#{enddate,jdbcType=TIMESTAMP},
+		groupfrom =
+		#{groupfrom,jdbcType=VARCHAR},
+		groupID = #{groupid,jdbcType=INTEGER},
+		stadiumID = #{stadiumid,jdbcType=INTEGER},
+		state =
+		#{state,jdbcType=INTEGER},
+		picture = #{picture,jdbcType=VARCHAR},
+		sportID = #{sportid,jdbcType=INTEGER},
+		manipuler =
+		#{manipuler,jdbcType=VARCHAR}
+		where id = #{id,jdbcType=INTEGER}
+	</update>
+</mapper>

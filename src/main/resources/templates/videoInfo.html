@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>赛事回放</title>
+		<meta charset="utf-8" />
+		<script src="/sports/js/vue.js"></script>
+		<!-- 引入样式 -->
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<link rel="stylesheet" href="/sports/css/element-icons.woff">
+		<!-- 引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+		<script src="/sports/js/axios.min.js"></script>
+		<style type="text/css">
+		  .avatar-uploader .el-upload {
+		    border: 1px dashed #d9d9d9;
+		    border-radius: 6px;
+		    cursor: pointer;
+		    position: relative;
+		    overflow: hidden;
+		  }
+		  .avatar-uploader .el-upload:hover {
+		    border-color: #409EFF;
+		  }
+		  .avatar-uploader-icon {
+		    font-size: 28px;
+		    color: #8c939d;
+		    width: 178px;
+		    height: 178px;
+		    line-height: 178px;
+		    text-align: center;
+		  }
+		  a{ text-decoration: none;
+		  }
+  		</style>
+	</head>
+
+	<body>
+		<div id="app">
+			<div>
+			 	<span>赛事标题：</span>
+				<el-input v-model="videoQuery.videotitle" placeholder="请输入赛事标题" style="width:200px;margin: 20px 66px 10px 10px" clearable ></el-input>
+				<span>比赛起止时间：</span>				
+				<el-date-picker v-model="videoQuery.begintime" type="datetime" placeholder="选择开始日期" ></el-date-picker>
+				----------
+				<el-date-picker v-model="videoQuery.endtime" type="datetime" placeholder="选择结束日期" style="margin:20px 66px 10px 0px"></el-date-picker>
+				<el-button icon="el-icon-search" circle @click="videoSearch"></el-button><br/>
+				<el-button type="success" icon="el-icon-plus" circle @click="addVideo"></el-button>
+				<el-button type="danger" icon="el-icon-delete" circle @click ="deleteVideo"></el-button>
+			</div>
+			<el-table :data="tableData" style="width: 100%" max-height="500" @selection-change="handleSelectionChange">
+				<el-table-column fixed type="index" width="100">
+				</el-table-column>
+				<el-table-column type="selection" width="100">
+				</el-table-column>
+				<el-table-column prop="videotitle" label="赛事标题" width="200">
+				</el-table-column>
+				<el-table-column prop="videointroduce" label="简介" width="200">
+				</el-table-column>
+				<el-table-column prop="video" label="视频路径" width="200">
+				<template scope="scope">
+            		<a v-if = "scope.row.video != null" :href="scope.row.video"><span id="aaa">点击播放</span></a>
+        		</template>		
+				</el-table-column>
+				<el-table-column prop="videopicture" label="视频封面路径" width="200">
+				<template scope="scope">
+            		<img v-if = "scope.row.videopicture != null" :src="scope.row.videopicture" class="picture" width="50" height="40"/>
+        		</template>
+				</el-table-column>
+				<el-table-column prop="showtime" label="播放时间" width="200" :formatter="timestamp">
+				</el-table-column>
+				<el-table-column prop="begintime" label="赛事开始时间" width="200" :formatter="timestampToTime">
+				</el-table-column>
+				<el-table-column prop="endtime" label="赛事播放时间" width="200" :formatter="timestampTime">
+				</el-table-column>								
+				<el-table-column prop="showstate" label="是否播放" width="120">
+				</el-table-column>
+				<el-table-column fixed="right" label="操作" width="180">
+				<template slot-scope="scope">
+					<el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>					
+				</template>
+			</el-table-column>
+			</el-table>
+			<div>
+				<el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" 
+				:page-sizes="[10, 20, 30, 40]" :page-size="10" layout="total, sizes, prev, pager, next, jumper" :total="tableTotal">
+				</el-pagination>
+			</div>
+			<el-dialog title="赛事报名" :visible.sync="dialogFormVisible" :fullscreen="true" @close="closeDialog">
+				<el-form :model="videoInfo" enctype="multipart/form-data" :inline="true" ref="videoInfo" :rules="rules">
+					<el-input v-model="videoInfo.id" type="hidden" autocomplete="off"></el-input>				
+					<el-form-item label="视频标题 " prop="videotitle">
+						<el-input v-model="videoInfo.videotitle" type="text" autocomplete="off" style = "width:400px;"></el-input>
+					</el-form-item>
+					<el-form-item label="简介" prop="videointroduce">
+					<el-input type="textarea" :autosize="{ minRows: 2, maxRows: 4}" placeholder="请输入内容" v-model="videoInfo.videointroduce" style = "width:400px;margin-left:28px"></el-input>						</el-date-picker>
+					</el-form-item><br>
+														
+     				<el-form-item label="视频" prop="video">						
+     					<el-upload class="avatar-uploader el-upload--text"    					 
+  						  action="http://localhost/sports/video/upVideo"
+  						  :on-success="handleSuccess"
+						  list-type="picture-card"
+						  :before-upload="beforeUploadVideo"
+						  :on-progress="uploadVideoProcess"
+						  :before-remove="beforeRemoveVideo" 
+						  :on-remove="RemoveVideo"
+						  >
+						   <!-- <el-progress v-if="videoFlag == true" type="circle" :percentage="videoUploadPercent" 
+						   style="margin-top:10px;"></el-progress> -->
+						  <i class="el-icon-plus"></i>						
+							<!-- <el-button size="small" type="primary">点击上传</el-button> -->
+							<div slot="tip" class="el-upload__tip">只能上传视频，且不超过1000M</div>
+						</el-upload>
+						<video v-if="videoInfo.video !=null && videoFlag == false" 
+						  :src="videoInfo.video" class="avatar" controls="controls" width="300px" height="200px">
+						  您的浏览器不支持视频播放</video>	
+					</el-form-item>
+     				<el-form-item label="视频封面" prop="videopicture">
+     					<el-upload class="avatar-uploader"
+     					  ref="upload"
+  						  action="/sports/video/upload"
+						  list-type="picture-card"
+						  :on-preview="handlePictureCardPreview"
+						  :on-success="handleAvatarSuccess"
+						  :before-remove="beforeRemove" 
+						  :on-remove="handleRemove"
+						  :file-list="fileList"
+						  v-model="videoInfo.videopicture"
+						  :limit="1"
+						  :on-exceed="handleExceed"
+						  >
+						   <i v-else class="el-icon-plus avatar-uploader-icon"></i>						
+							<!-- <el-button size="small" type="primary">点击上传</el-button> -->
+							<div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过100M</div>
+						</el-upload>
+						
+						<!-- <el-dialog :visible.sync="dialogVisible">
+						  <img width="100%" :src="dialogImageUrl" alt="">
+						</el-dialog> -->
+					</el-form-item><br>
+					<el-form-item label="是否播放" prop="showstate">
+						 <el-radio v-model="videoInfo.showstate" label="是">是</el-radio><br>
+  						 <el-radio v-model="videoInfo.showstate" label="否">否</el-radio>
+     				</el-form-item>	<br>     				
+					<el-form-item label="播放时间" prop="showtime">
+						 <el-time-picker
+						    v-model="videoInfo.showtime"
+						    :picker-options="{
+						      selectableRange: '00:00:00 - 23:59:59'
+						    }"
+						    placeholder="任意时间点">
+						  </el-time-picker>
+					</el-form-item><br>
+					<el-form-item label="开始时间" prop="begintime">
+					<el-date-picker v-model="videoInfo.begintime" type="datetime" placeholder="选择开始日期" value-format="yyyy-MM-dd HH:mm:ss" :picker-options="pickerOptions00"></el-date-picker>
+					</el-form-item>
+					<el-form-item label="结束时间" prop="endtime">
+					<el-date-picker v-model="videoInfo.endtime" type="datetime" placeholder="选择开始日期" value-format="yyyy-MM-dd HH:mm:ss" :picker-options="pickerOptions11"></el-date-picker>
+					</el-form-item>
+					
+				</el-form>
+				<div slot="footer" class="dialog-footer">
+					<el-button @click="dialogFormVisible = false">取 消</el-button>
+					<el-button type="primary" @click="changeVideo">确 定</el-button>
+				</div>
+			</el-dialog>
+		</div>
+		
+		<script type="text/javascript">
+			var app = new Vue({
+				el: "#app",
+				 data: {
+					 
+					 
+					 pickerOptions00: {
+							disabledDate(time) {
+								return time.getTime() < Date.now() - 8.64e7; //如果没有后面的-8.64e7就是不可以选择今天的
+							}
+						},
+						pickerOptions11: {
+							disabledDate(time) {
+								var applyDateTime = app.videoInfo.begintime;
+								time1 = Date.parse(applyDateTime);
+								return time.getTime() - 8.64e7 < time1;
+
+							}
+						},
+					videoQuery: {
+						page: 1,
+						count: 10,
+						videotitle: "",
+						begintime: "", //搜索的条件 ---  入职开始时间
+						endtime: "" //搜索的条件 ---  入职结束时间
+						},
+					tableData: [],
+					tableTotal: 0,
+					videoInfo: {
+						videopicture: ""
+					},
+					fileList: [],
+					dialogFormVisible: false,
+					dialogImageUrl: '',
+				    dialogVisible: false,
+				    multipleSelection:[],
+				    videoFlag:false,
+				    rules: {				  
+						videotitle: [{
+								required: true,
+								message: '请输入赛事标题',
+								trigger: 'blur'
+							}
+						],
+						videointroduce: [{
+								required: true,
+								message: '请输入赛事简介',
+								trigger: 'blur'
+							}
+						],
+						showstate: [{
+								required: true,
+								message: '请选择播放状态',
+								trigger: 'blur'
+							}
+						],
+						showtime: [{
+								required: true,
+								message: '请选择播放状态',
+								trigger: 'change'
+							}
+						],
+						begintime: [{
+								required: true,
+								message: '请选择开始时间',
+								trigger: 'change'
+							}
+						],
+						endtime: [{
+								required: true,
+								message: '请选择结束时间',
+								trigger: 'change'
+							},
+							{
+								validator: function(rule, value, callback) {
+									if(app.videoInfo.begintime == null) {
+										callback(new Error('请选择开始时间'));
+									}
+									if(app.videoInfo.endtime <= app.videoInfo.begintime) {
+										callback(new Error('结束时间大于开始时间'));
+									}
+									callback();
+								},
+								trigger: 'change'
+							}
+						],
+				    }	
+				},
+				methods: {
+					closeDialog(){
+						this.$refs.videoInfo.resetFields();
+					},
+				
+					timestamp:function (row, column) {
+				    	 var date = new Date(row.showtime) //时间戳为10位需*1000，时间戳为13位的话不需乘1000
+				    	/*  var Y = date.getFullYear() + '-'
+				    	 var M = (date.getMonth()+1 < 10 ? '0'+(date.getMonth()+1) : date.getMonth()+1) + '-'
+				    	 var D = date.getDate() + ' ' */
+				    	 var h = (date.getHours()<10? '0' + date.getHours() : date.getHours()) + ':'
+				    	 var m = (date.getMinutes()<10?'0' + date.getMinutes():date.getMinutes()) + ':'
+				    	 var s = (date.getSeconds()<10? '0' + date.getSeconds() :date.getSeconds())
+				    	/* var s = date.getSeconds() */
+				    	return h+m+s
+				    						 
+				    },
+					timestampToTime:function (row, column) {
+				    	 var date = new Date(row.begintime) //时间戳为10位需*1000，时间戳为13位的话不需乘1000
+				    	 var Y = date.getFullYear() + '-'
+				    	 var M = (date.getMonth()+1 < 10 ? '0'+(date.getMonth()+1) : date.getMonth()+1) + '-'
+				    	 var D = (date.getDate()<10?'0'+date.getDate():date.getDate()) + ' '
+				    	 var h = (date.getHours()<10? '0' + date.getHours() : date.getHours()) + ':'
+				    	 var m = (date.getMinutes()<10?'0' + date.getMinutes():date.getMinutes()) + ':'
+				    	 var s = (date.getSeconds()<10? '0' + date.getSeconds() :date.getSeconds())
+				    	/* var s = date.getSeconds() */
+				    	return Y+M+D+h+m+s				    							 
+				    },				
+				    timestampTime:function (row, column) {
+				    	 var date = new Date(row.endtime) //时间戳为10位需*1000，时间戳为13位的话不需乘1000
+				    	 var Y = date.getFullYear() + '-'
+				    	 var M = (date.getMonth()+1 < 10 ? '0'+(date.getMonth()+1) : date.getMonth()+1) + '-'
+				    	 var D = (date.getDate()<10?'0'+date.getDate():date.getDate()) + ' '
+				    	 var h = (date.getHours()<10? '0' + date.getHours() : date.getHours()) + ':'
+				    	 var m = (date.getMinutes()<10?'0' + date.getMinutes():date.getMinutes()) + ':'
+				    	 var s = (date.getSeconds()<10? '0' + date.getSeconds() :date.getSeconds())
+				    	return Y+M+D+h+m+s				    							 
+				    },				
+					handleSizeChange: function(val) {
+						this.videoQuery.count = val;
+						this.videoQuery.page = 1;
+						reload();
+					},
+					handleCurrentChange: function(val) {
+						this.videoQuery.page = val;
+						reload();
+					},
+					videoSearch:function(){//搜索
+						reload();
+					},				
+					addVideo:function(){//打开新增模态窗口
+						this.dialogFormVisible = true;
+						this.videoInfo = {};
+						this.fileList = [];
+					},
+					handleRemove(file, fileList) {//删除文件之前的钩子，参数为上传的文件和文件列表，若返回 false 或者返回 Promise 且被 reject，则停止上传。
+				        console.log(file, fileList);
+				        this.$message({
+			                type: 'info',
+			                message: '已移除原有图片',
+			                duration: 6000
+			            });
+				    },
+				   
+				    handlePictureCardPreview(file) {//点击文件列表中已上传的文件时的钩子
+				       /*  this.dialogImageUrl = file.url;
+				        this.dialogVisible = true; */
+				    },
+				    handleSuccess(res, file){
+				    	if(res != null) {
+							this.$refs.videoInfo.validate(function(valid) {
+								if(valid) {								     									
+								    app.videoInfo.video = res; 																		
+								}
+							});
+						}
+				    	app.$message({
+			                type: 'info',
+			                message: '视频上传成功',
+			                duration: 6000
+			            });
+			            /* if (file.response.success) {
+			            	app.videoInfo.video = file.response.message; //将返回的文件储存路径赋值picture字段
+			            } */
+				    },
+				    beforeUploadVideo(file) {
+				        const isLt1000M = file.size / 1024 / 1024  < 1000;
+				        if (['video/mp4', 'video/ogg', 'video/flv','video/avi','video/wmv','video/rmvb'].indexOf(file.type) == -1) {
+				            this.$message.error('请上传正确的视频格式');
+				            return false;
+				        }
+				        if (!isLt1000M) {
+				            this.$message.error('上传视频大小不能超过1000MB哦!');
+				            return false;
+				        }
+				    },
+				    beforeRemoveVideo(file, fileList) {//视频移除前操作
+		               /* return this.$confirm('确定移除 ${ file.name }？'); */
+		            },
+		            RemoveVideo(file, fileList) {//删除文件之前的钩子，参数为上传的文件和文件列表，若返回 false 或者返回 Promise 且被 reject，则停止上传。
+				        /* console.log(file, fileList);
+				        this.$message({
+			                type: 'info',
+			                message: '已移除原有视频',
+			                duration: 6000
+			            }); */
+				    },
+				    uploadVideoProcess(event, file, fileList){//进度条
+				       /*  this.videoFlag = true;
+				        this.videoUploadPercent = file.percentage.toFixed(0); */
+				    },
+				    handleAvatarSuccess(res, file) {//图片上传成功的钩子函数				    	
+						if(res != null) {
+							this.$refs.videoInfo.validate(function(valid) {
+								if(valid) {								     									
+								    app.videoInfo.videopicture = res; 																		
+								}
+							});
+						}
+						app.$message({
+			                type: 'info',
+			                message: '图片上传成功',
+			                duration: 6000
+			            });
+			            if (file.response.success) {
+			            	app.videoInfo.videopicture = file.response.message; //将返回的文件储存路径赋值picture字段
+			            }
+		        	},
+		        	handleExceed(files, fileList) {//图片上传限制
+		                /* this.$message.warning("当前限制选择 1 个文件，本次选择了" +${files.length}+ "个文件，共选择了"+ ${files.length + fileList.length}+ "个文件"); */
+		                this.$message.warning('当前限制选择 1 个文件，本次选择了' +files.length+'个文件，共选择了'+files.length + fileList.length+'个文件');
+		             },
+		            beforeRemove(file, fileList) {//图片移除前操作
+		            	 console.log(file);
+		            	
+		               return this.$confirm('确定移除 ?');
+		            },
+				    changeVideo:function(){//模态窗口确定按钮信息提交				    	
+				    	this.$refs.upload.submit(); 
+				    	this.$refs["videoInfo"].validate(function(valid) {
+							if(valid) {
+				    	 var url = "";
+							if(app.videoInfo.id == null){
+								url = "/sports/video/addVideo";
+							}else{
+								url = "/sports/video/editVideo";							
+							}
+							axios.post(url, app.videoInfo)
+							.then(function(response) {										
+								reload();
+								app.dialogFormVisible = false;
+								if(response.data.code == 200) {
+									//跳转
+									 app.$notify({
+								          title: '恭喜您！操作成功',
+								          message: '这是一条成功的提示消息',
+								          type: 'success',
+								          offset: 100
+								        });																	
+								} else {
+									app.$notify.error({
+										title: '抱歉！操作失败',
+										message: '这是一条失败的提示消息',
+										offset: 100
+									});
+								}
+							});
+							
+							}
+							
+						});
+				    	/* this.dialogFormVisible = false; */
+				    },
+				    handleEdit:function(video){	//编辑查看与图片回显				
+						axios.get('/sports/video/getEditVideo?id=' + video.id)
+						.then(function(response) {
+							
+							app.videoInfo = response.data;							
+							var a= {url:app.videoInfo.videopicture};						
+							app.fileList=[];
+							app.fileList.push(a);														
+							app.dialogFormVisible = true;
+						});	 
+					},
+					handleSelectionChange: function(val) {
+						this.multipleSelection = val;
+					},
+					deleteVideo:function(){//删除
+						 this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+         					confirmButtonText: '确定',
+					          cancelButtonText: '取消',
+					          type: 'warning'
+						 }).then(function(){
+						 	var ids = [];
+                            var s = app.multipleSelection;
+                            for(var index in s){
+                                ids.push(s[index].id);
+                            }
+                           axios.post("/sports/video/deleteVideo", ids)
+							.then(function(response) {
+							   app.videoQuery.page = 1;
+								reload();
+						 	});
+						 });
+					},
+				}
+			});
+			function reload() {//加载表格数据
+				axios.post('/sports/video/getVideo', app.videoQuery)
+					.then(function(response) {
+						app.tableData = response.data.videoData;
+						app.tableTotal = response.data.videoTotal;
+					});
+			}
+			reload();
+		</script>
+
+	</body>
+
+</html>

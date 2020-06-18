@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.proj.mapper.GrouptypeMapper">
+  <resultMap id="BaseResultMap" type="com.xxx.proj.entity.Grouptype">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="gname" jdbcType="VARCHAR" property="gname" />
+    <result column="minpeople" jdbcType="INTEGER" property="minpeople" />
+    <result column="maxpeople" jdbcType="INTEGER" property="maxpeople" />
+    <result column="cost" jdbcType="VARCHAR" property="cost" />
+    <result column="specialexplain" jdbcType="VARCHAR" property="specialexplain" />
+    <result column="whethergroup" jdbcType="INTEGER" property="whethergroup" />
+    <result column="whetherpay" jdbcType="INTEGER" property="whetherpay" />
+    <result column="xxx" jdbcType="VARCHAR" property="xxx" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, gname, minpeople, maxpeople, cost, specialexplain, whethergroup, whetherpay, 
+    xxx
+  </sql>
+  
+    
+	<!--分页加条件查询 -->
+	<sql id="GrouptypePagemzsm">
+		<if test="name!=null">
+			where g.gname like '%${name}%'
+		</if>
+	</sql>
+	<select id="getGrouptypeList" resultType="map">
+		select *
+		from grouptype g
+		<include refid="GrouptypePagemzsm" />
+		limit #{page},#{count}
+	</select>
+
+	<select id="getTotal" resultType="java.lang.Integer">
+		select count(*) c from grouptype g
+		<include refid="GrouptypePagemzsm" />
+	</select>
+  
+  <!-- 查询存不存在相同的名称的 -->
+	<select id="selectByName" resultType="java.lang.Integer">
+		select count(*)
+		from grouptype
+		where gname = #{gname}
+	</select>
+	<!--id查记录  -->
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from grouptype
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+	<!--id查记录  ss  -->
+  <select id="selectById" parameterType="java.lang.Integer" resultType="map">
+    select 
+    <include refid="Base_Column_List" />
+    from grouptype
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+	
+	
+<!-- 删除组别 -->
+	<delete id="deleteGrouptypeList" >
+			delete from grouptype
+		where id  in
+		<foreach collection="array" item="id"  open="("
+			separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+	
+	
+
+  
+  
+  
+  
+  
+  
+  
+  
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from grouptype
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.xxx.proj.entity.Grouptype">
+    insert into grouptype (id, gname, minpeople, 
+      maxpeople, cost, specialexplain, 
+      whethergroup, whetherpay, xxx
+      )
+    values (#{id,jdbcType=INTEGER}, #{gname,jdbcType=VARCHAR}, #{minpeople,jdbcType=INTEGER}, 
+      #{maxpeople,jdbcType=INTEGER}, #{cost,jdbcType=VARCHAR}, #{specialexplain,jdbcType=VARCHAR}, 
+      #{whethergroup,jdbcType=INTEGER}, #{whetherpay,jdbcType=INTEGER}, #{xxx,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.xxx.proj.entity.Grouptype">
+    insert into grouptype
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="gname != null">
+        gname,
+      </if>
+      <if test="minpeople != null">
+        minpeople,
+      </if>
+      <if test="maxpeople != null">
+        maxpeople,
+      </if>
+      <if test="cost != null">
+        cost,
+      </if>
+      <if test="specialexplain != null">
+        specialexplain,
+      </if>
+      <if test="whethergroup != null">
+        whethergroup,
+      </if>
+      <if test="whetherpay != null">
+        whetherpay,
+      </if>
+      <if test="xxx != null">
+        xxx,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="gname != null">
+        #{gname,jdbcType=VARCHAR},
+      </if>
+      <if test="minpeople != null">
+        #{minpeople,jdbcType=INTEGER},
+      </if>
+      <if test="maxpeople != null">
+        #{maxpeople,jdbcType=INTEGER},
+      </if>
+      <if test="cost != null">
+        #{cost,jdbcType=VARCHAR},
+      </if>
+      <if test="specialexplain != null">
+        #{specialexplain,jdbcType=VARCHAR},
+      </if>
+      <if test="whethergroup != null">
+        #{whethergroup,jdbcType=INTEGER},
+      </if>
+      <if test="whetherpay != null">
+        #{whetherpay,jdbcType=INTEGER},
+      </if>
+      <if test="xxx != null">
+        #{xxx,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xxx.proj.entity.Grouptype">
+    update grouptype
+    <set>
+      <if test="gname != null">
+        gname = #{gname,jdbcType=VARCHAR},
+      </if>
+      <if test="minpeople != null">
+        minpeople = #{minpeople,jdbcType=INTEGER},
+      </if>
+      <if test="maxpeople != null">
+        maxpeople = #{maxpeople,jdbcType=INTEGER},
+      </if>
+      <if test="cost != null">
+        cost = #{cost,jdbcType=VARCHAR},
+      </if>
+      <if test="specialexplain != null">
+        specialexplain = #{specialexplain,jdbcType=VARCHAR},
+      </if>
+      <if test="whethergroup != null">
+        whethergroup = #{whethergroup,jdbcType=INTEGER},
+      </if>
+      <if test="whetherpay != null">
+        whetherpay = #{whetherpay,jdbcType=INTEGER},
+      </if>
+      <if test="xxx != null">
+        xxx = #{xxx,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xxx.proj.entity.Grouptype">
+    update grouptype
+    set gname = #{gname,jdbcType=VARCHAR},
+      minpeople = #{minpeople,jdbcType=INTEGER},
+      maxpeople = #{maxpeople,jdbcType=INTEGER},
+      cost = #{cost,jdbcType=VARCHAR},
+      specialexplain = #{specialexplain,jdbcType=VARCHAR},
+      whethergroup = #{whethergroup,jdbcType=INTEGER},
+      whetherpay = #{whetherpay,jdbcType=INTEGER},
+      xxx = #{xxx,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

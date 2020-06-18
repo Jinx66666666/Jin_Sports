@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ 
+ 
+<mapper namespace="com.xxx.proj.mapper.IAppOrderMapper">
+	<resultMap id="BaseResultMap" type="com.xxx.proj.entity.JinApplyIndent">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="gamenames" jdbcType="VARCHAR" property="gamenames" />
+    <result column="applyname" jdbcType="VARCHAR" property="applyname" />
+    <result column="idcard" jdbcType="VARCHAR" property="idcard" />
+    <result column="sex" jdbcType="VARCHAR" property="sex" />
+    <result column="teamnames" jdbcType="VARCHAR" property="teamnames" />
+    <result column="grouping" jdbcType="VARCHAR" property="grouping" />
+    <result column="phone" jdbcType="VARCHAR" property="phone" />
+    <result column="applydate" jdbcType="TIMESTAMP" property="applydate" />
+    <result column="paystate" jdbcType="VARCHAR" property="paystate" />
+    <result column="grade" jdbcType="VARCHAR" property="grade" />
+    <result column="idcardphoto" jdbcType="VARCHAR" property="idcardphoto" />
+    <result column="teamid" jdbcType="VARCHAR" property="teamid" />
+    <result column="grouptypeid" jdbcType="VARCHAR" property="grouptypeid" />
+    <result column="usetel" jdbcType="VARCHAR" property="usetel" />
+    <result column="jin" jdbcType="VARCHAR" property="jin" />
+    <result column="jinx" jdbcType="VARCHAR" property="jinx" />
+  </resultMap>
+	
+	
+	
+	<select id="getOrder" resultType="map">
+	      select j.*,g.gname,ga.gamename,ga.picture,s.sportname,ga.begindate,ga.enddate
+	      from jin_applyindent j,grouptype g,gameinformation ga,stadium s
+	      where 
+	      j.gamenames=ga.id and j.grouping = g.id and j.usetel=#{tel} and ga.stadiumID= s.id
+	      <if test="paystate != null and paystate != '' ">
+	           and j.paystate = #{paystate}
+	       </if>
+	      ORDER BY j.applydate DESC
+	</select>
+	<select id="getTicketOrder" resultType="map">
+	 select t.ordernum,t.price,t.number,t.state,st.sportname,st.stadiumname
+	 from stadiumticket t
+	 join stadiumticketadd s on t.ticketid=s.id
+	 join stadium st on s.stadiumid=st.id
+	 where t.loginid = #{tel}
+	 ORDER BY t.id DESC
+	</select>
+		
+</mapper>
+

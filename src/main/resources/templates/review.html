@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>user.html</title>
+		<meta charset="utf-8" />
+		<!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+		引入样式
+		<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+		引入组件库
+		<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
+		<script src="/sports/js/vue.js"></script>
+		<script src="/sports/js/axios.min.js"></script>
+		<!-- 引入样式 -->
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<!-- 引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+		<style type="text/css">
+			.avatar-uploader .el-upload {
+				border: 1px dashed #d9d9d9;
+				border-radius: 6px;
+				cursor: pointer;
+				position: relative;
+				overflow: hidden;
+			}
+			
+			.avatar-uploader .el-upload:hover {
+				border-color: #409EFF;
+			}
+			
+			.avatar-uploader-icon {
+				font-size: 28px;
+				color: #8c939d;
+				width: 178px;
+				height: 178px;
+				line-height: 178px;
+				text-align: center;
+			}
+			
+			.avatar {
+				width: 178px;
+				height: 178px;
+				display: block;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="app">
+			<div>
+				<el-button type="success" icon="el-icon-plus" @click="showModel" circle></el-button>
+				<el-button type="danger" icon="el-icon-delete" circle @click="deleteReview"></el-button>
+				信息名称:
+				<el-input v-model="reviewQuery.reviewtitle" placeholder="请输入信息名称" style="width:200px" clearable></el-input>
+				简介:
+				<el-input v-model="reviewQuery.reviewintro" placeholder="请输入简介" style="width:200px" clearable></el-input>
+				<el-button icon="el-icon-search" circle @click="reviewSearch"></el-button>
+			</div>
+
+			<el-table :data="tableData" style="width: 100% ;height:90%" @selection-change="handleSelectionChange">
+				<el-table-column type="index"></el-table-column>
+				<el-table-column type="selection"  width="55"></el-table-column>
+				<el-table-column prop="reviewtitle" label="精彩信息名称" width="300">
+				</el-table-column>
+				<el-table-column prop="reviewintro" label="简介" width="500">
+				</el-table-column>
+				<el-table-column label="操作">
+					<template slot-scope="scope">
+						<el-button size="mini" @click="editreview(scope.row)">编辑</el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+			<div>
+				<el-pagination @size-change="handleSizeChange" :current-page="reviewQuery.page" @current-change="handleCurrentChange" :page-sizes="[5, 10, 15, 20]" :page-size="5" layout="total, sizes, prev, pager, next, jumper" :total="tableTotal">
+				</el-pagination>
+			</div>
+
+			<div>
+				<el-dialog title="精彩信息" :visible.sync="dialogVisible" @close="closeDialog" width="30%">
+					<el-form :model="reviewInfo" ref="reviewInfo" label-width="100px" :rules="rules" class="demo-ruleForm">
+						<el-form-item label="信息标题" prop="reviewtitle">
+							<input type="hidden"  v-model="reviewInfo.id" />
+							<el-input v-model="reviewInfo.reviewtitle"  type="text" autocomplete="off"></el-input>
+						</el-form-item>
+						<el-form-item label="详细信息" prop="reviewdetailedinfo">
+							<el-input v-model="reviewInfo.reviewdetailedinfo" rows = "5" cols = "50" type="textarea" autocomplete="off"></el-input>
+						</el-form-item>
+						<el-form-item label="简介" prop="reviewintro">
+							<el-input v-model="reviewInfo.reviewintro"   type="text" autocomplete="off"></el-input>
+						</el-form-item>
+						<el-form-item label="是否置顶">
+							<template >
+							  <el-radio  v-model="states" label=1>是</el-radio>
+							  <el-radio  v-model="states" label=2 >否</el-radio>
+							</template>
+						</el-form-item>
+					</el-form>
+					<span slot="footer" class="dialog-footer">
+						<el-button  type="primary" @click="changeReview">保存</el-button>
+    					<el-button  @click="dialogVisible = false">取 消</el-button>
+ 					</span>
+				</el-dialog>
+			</div>
+		</div>
+
+		<script type="text/javascript">
+			var app = new Vue({
+				el: "#app",
+				data: {
+					reviewQuery: {
+						page: 1, //页数
+						count: 5, //每页几条
+						reviewtitle: "", //搜索标题
+						reviewintro:""//搜索简介
+					},
+					states: '2' ,
+					tableTotal: 0,
+					tableData: [],
+					dialogVisible: false,
+					reviewInfo: {
+					},
+					multipleSelection: [],
+					rules:{
+						reviewtitle: [
+				            { required: true, message: '请输入标题', trigger: 'blur' }
+				          ],
+				          reviewdetailedinfo: [
+					            { required: true, message: '请输入详细信息', trigger: 'blur' }
+					      ],
+					      reviewintro: [
+					            { required: true, message: '请输入简介', trigger: 'blur' }
+					          ]
+					}
+				},
+				methods: {
+					reviewSearch: function() {
+						reload();
+					},
+					handleSizeChange: function(val) {
+						this.reviewQuery.count = val;
+						this.reviewQuery.page = 1;
+						reload();
+					},
+					handleCurrentChange: function(val) {
+						this.reviewQuery.page = val;
+						reload();
+					},
+					showModel: function() {
+						this.dialogVisible = true;
+						this.reviewInfo = {};
+					},
+					closeDialog(){
+						this.$refs.reviewInfo.resetFields();
+					},
+					changeReview: function() {
+						this.$refs.reviewInfo.validate(function(valid) {
+						if(valid) {
+						app.reviewInfo.state = app.states;
+						var url = '';
+						if(app.reviewInfo.id == null) {
+							url = '/sports/review/addReview';
+						} else {
+							url = '/sports/review/editReview';
+						}
+						axios.post(url, app.reviewInfo)
+							.then(function(response) {
+								reload();
+							});
+						app.dialogVisible = false;
+						}
+						});
+					},
+					editreview: function(reviewInfo) {
+						edit(reviewInfo);
+						
+					},
+					
+					handleSelectionChange: function(val) {
+						this.multipleSelection = val;
+					},
+					deleteReview: function() {
+						this.$confirm('此操作将永久删除该数据, 是否继续?', '提示', {
+							confirmButtonText: '确定',
+							cancelButtonText: '取消',
+							type: 'warning'
+						}).then(function() {
+							var ids = [];
+							var s = app.multipleSelection;
+							for(var index in s) {
+								ids.push(s[index].id);
+							}
+							axios.post('/sports/review/deleteReview', ids)
+								.then(function(response) {
+									app.reviewQuery.page = 1;
+									reload();
+								});
+						})
+					}
+				}
+			});
+			function edit(reviewInfo){
+				axios.get('/sports/review/getReviewByID?id=' + reviewInfo.id)
+				.then(function(response) {
+					app.reviewInfo = response.data;
+					app.states = response.data.state.toString();
+					app.dialogVisible = true;
+				});
+			};
+			function reload() {
+				axios.post('/sports/review/getReview', app.reviewQuery)
+					.then(function(response) {
+						app.tableTotal = response.data.gettotal;
+						app.tableData = response.data.getreview;
+					})
+			};
+			reload();
+			
+		</script>
+
+	</body>

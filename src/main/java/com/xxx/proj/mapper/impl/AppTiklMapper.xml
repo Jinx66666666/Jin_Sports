@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.xxx.proj.mapper.IAppTiklMapper">
+ <!-- 
+ <select id="getAppTikl" resultType="map">
+   select s2.stadiumname,s3.ticketprice,s4.ticketid
+FROM sportadd s1,stadium s2,stadiumticketadd s3,stadiumticket s4
+WHERE s1.id=s2.sportid AND s2.id=s3.stadiumid AND s4.ticketid= s3.id;
+ </select> -->
+ 
+ 
+<!-- <select id="getAppTiklsport"  resultType="map">
+select s1.sportaddress,s1.sportname,s1.sportone,s1.sporttwo,s1.sportthree,s1.sportfour, s2.stadiumname,s3.ticketprice
+FROM sportadd s1,stadium s2,stadiumticketadd s3
+WHERE s1.id=s2.sportid AND s2.id=s3.stadiumid
+</select> -->
+ 
+ <resultMap type="map" id="getAppTikl">
+		<id column="id" property="id" />
+		<result column="sportname" property="sportname" />
+		<result column="sportaddress" property="sportaddress" />
+		<result column="sportone" property="sportone" />
+		<result column="state" property="state" />
+		<collection column="{pid=id}" property="stadium" javaType="list"
+			select="getSaiShiChangGuan" />
+	</resultMap>
+
+	<select id="getAppTiklsport" resultMap="getAppTikl">
+		SELECT id,sportname,sportaddress,sportone,stateid
+		from
+		sportadd
+		where stateid = 1
+	</select>
+
+	<select id="getSaiShiChangGuan" parameterType="map" resultType="map">
+		SELECT s1.id, s1.stadiumname,s2.ticketprice,s1.state,s2.id
+		FROM sportadd s3, stadium s1,stadiumticketadd s2
+		WHERE s1.id=s2.stadiumid AND s3.id = s1.sportid and s3.id=#{pid};
+	</select>
+ 
+ 
+ 
+ </mapper>

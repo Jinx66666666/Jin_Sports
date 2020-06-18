@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>赛事基本信息</title>
+		<meta charset="utf-8" />
+
+		<script src="/sports/js/vue.js"></script>
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<script src="/sports/js/axios.min.js"></script>
+		<!-- 	引入样式 -->
+		<link rel="stylesheet" href="/sports/css/fonts/element-icons.woff">
+		<link rel="stylesheet" href="/sports/css/fonts/element-icons.ttf">
+		<!-- 	引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+
+		<style>
+			.avatar-uploader .el-upload {
+				border: 1px dashed #d9d9d9;
+				border-radius: 6px;
+				cursor: pointer;
+				position: relative;
+				overflow: hidden;
+			}
+			
+			.avatar-uploader .el-upload:hover {
+				border-color: #409EFF;
+			}
+			
+			.avatar-uploader-icon {
+				font-size: 28px;
+				color: #8c939d;
+				width: 178px;
+				height: 178px;
+				line-height: 178px;
+				text-align: center;
+			}
+			
+			.avatar {
+				padding: 0px;
+				margin: 0px;
+				width: 178px;
+				height: 178px;
+				display: block;
+				width: 178px;
+			}
+			
+			.el-dialog {}
+		</style>
+	</head>
+
+	<body>
+		<div id="app">
+			<div>						
+				赛事标题:
+				<el-input placeholder="请输入免责声明名称" style="width:200px" v-model="pageGameInfo.name" clearable></el-input>
+				报名时间：
+				<el-date-picker v-model="value5" type="datetimerange" :picker-options="pickerOptions2" range-separator="至" start-placeholder="报名时间" end-placeholder="截止时间" align="right" @change="chooseTimeRange" value-format="yyyy-MM-dd HH:mm:ss">
+				</el-date-picker>
+				比赛时间：
+				<el-date-picker v-model="pageGameInfo.begindate" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" placeholder="选择日期时间" align="right"> </el-date-picker>
+				<span class="demonstration">至</span>
+				<el-date-picker v-model="pageGameInfo.enddate" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" placeholder="选择日期">
+				</el-date-picker>
+
+				<el-button icon="el-icon-search" @click="searchCondition" circle></el-button>
+			</div>
+
+			<el-table stripe :data="tableData" style="width: 100%" @selection-change="handleSelectionChange">
+				<el-table-column type="selection" width="55"> </el-table-column>
+				<el-table-column type="index" label="编号" width="50"> </el-table-column>
+				<el-table-column prop="id" label="编号" width="180" type="none" v-if="false">
+					
+				</el-table-column>
+				<el-table-column prop="gamename" label="赛事名称" width="180"> </el-table-column>
+				<el-table-column prop="sportname" label="地址" width="180"> </el-table-column>
+				<el-table-column prop="disclaimer" label="声明" width="180"> </el-table-column>
+				<el-table-column prop="numbers" label="赛事总人数" width="180"> </el-table-column>
+				<el-table-column prop="applydate" label="报名时间" width="180"> </el-table-column>
+				<el-table-column prop="cutdate" label="截止时间" width="180"> </el-table-column>		
+				<el-table-column prop="begindate" label="开始时间" width="180"> </el-table-column>
+				<el-table-column prop="enddate" label="结束时间" width="180"> </el-table-column>
+				<el-table-column prop="state" label="状态" width="180" :formatter="stateFormatter"> </el-table-column>
+				<el-table-column prop="manipuler" label="状态修改操作人" width="180" > </el-table-column>
+				<el-table-column label="操作" fixed="right" width="180">
+					<template slot-scope="scope">
+						<el-button type="primary" size="mini" @click="handleEdit(scope.$index, scope.row)">查看</el-button>
+						<el-button type="danger" size="mini" v-if="scope.row.state==1" @click="handleClose(scope.$index, scope.row)">点击关闭</el-button>
+						<el-button type="success" size="mini"  v-else  @click="handleOpen(scope.$index, scope.row)">点击开启</el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+
+			<el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" background :current-page="pageGameInfo.page" :page-sizes="[5, 10, 15, 20]" :page-size="pageGameInfo.count" layout="total, sizes, prev, pager, next, jumper" :total="total">
+			</el-pagination>
+
+			<el-dialog title="免责声明" :visible.sync="dialogVisible" width="70%" @close="closeDialog">
+			
+				<el-dialog width="60%" title="免责声明" :visible.sync="innerVisible" append-to-body >
+				<el-input type="textarea" v-model="disclaimerContent" rows="20" cols="50" readonly></el-input>
+				
+				</el-dialog>
+				<el-form :model="ruleForm" label-width="100px" :rules="rules" ref="ruleForm" class="demo-ruleForm demo-dynamic" :inline="true" enctype="multipart/form-data">
+					<el-form-item label="id" prop="id" v-if="false">
+						<el-input v-model="ruleForm.id" readonly></el-input>
+					</el-form-item>
+					<el-form-item label="赛事名称" prop="gamename">
+						<el-input v-model="ruleForm.gamename" disabled ></el-input>
+					</el-form-item>
+					<el-form-item label="免责声明" prop="disclaimerid" label-width="100px">
+						<el-select v-model="ruleForm.disclaimerid" placeholder="请选择" disabled >
+							<el-option v-for="disclaimer in disclaimerList"  :key="disclaimer.id" :label="disclaimer.disclaimer" :value="disclaimer.id"> </el-option>
+						</el-select>
+						<el-button type="primary" @click="lookSM">查看免责声明内容</el-button>
+					</el-form-item>
+					<el-form-item label="赛事简介" prop="introduce">
+						<el-input disabled type="textarea" v-model="ruleForm.introduce" rows="8" cols="80"></el-input>
+					</el-form-item>
+					<el-form-item label="赛事图片" prop="picture">
+						<el-upload disabled class="avatar-uploader" action="/sports/gameinfo/upload" :show-file-list="false" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload"> <img v-if="ruleForm.picture" :src="ruleForm.picture" class="avatar" style="width: 200px; margin: 10px"> <i v-else class="el-icon-plus avatar-uploader-icon"></i> </el-upload>
+					</el-form-item> <br>
+					<el-form-item label="报名时间" prop="applydate">
+						<el-date-picker disabled v-model="ruleForm.applydate" value-format="yyyy-MM-dd HH:mm:ss" type="datetime" placeholder="选择报名时间"> </el-date-picker>
+					</el-form-item>
+					<el-form-item label="截止时间" prop="cutdate">
+						<el-date-picker disabled v-model="ruleForm.cutdate" value-format="yyyy-MM-dd HH:mm:ss" type="datetime" placeholder="选择截止时间"> </el-date-picker>
+					</el-form-item>
+					<el-form-item label="开始时间" prop="begindate">
+						<el-date-picker disabled v-model="ruleForm.begindate" value-format="yyyy-MM-dd HH:mm:ss" type="datetime" placeholder="选择开始时间"> </el-date-picker>
+					</el-form-item>
+					<el-form-item label="结束时间" prop="enddate">
+						<el-date-picker  disabled v-model="ruleForm.enddate" value-format="yyyy-MM-dd HH:mm:ss" type="datetime" placeholder="选择结束时间"> </el-date-picker>
+					</el-form-item>
+					<el-form-item label="赛事场馆" prop="stadiumList">
+						<el-cascader disabled expand-trigger="hover" :options="gameField" v-model="ruleForm.stadiumList"> </el-cascader>
+					</el-form-item>
+				</el-form>
+				<el-form :model="dynamicValidateForm" ref="dynamicValidateForm" label-width="100px" class="demo-dynamic" :inline="true">
+					<div v-for="(domain, index) in dynamicValidateForm.domains" :label="'域名' + index" :key="domain.key">
+						<el-form-item :label="'组别' + (index+1)" :prop="'domains.' + index + '.groupid'" :rules="{
+							validator: function(rule, value, callback) {
+								if(value == '' || value == undefined || value == null){
+									callback(new Error('组别不能为空'));
+								}else{
+						                  callback();
+						           }
+							},
+							trigger: 'blur'
+    }">
+							<el-select v-model="domain.groupid" placeholder="请选择组别" @change="onSelects($event,index)" disabled>
+								<el-option v-for="group in groupArr" :key="group.id" :label="group.gname" :value="group.id" > </el-option>
+							</el-select>
+						</el-form-item>
+
+						<el-form-item label="组别人数" :prop="'domains.' + index + '.number'" :rules="
+      {
+							validator: function(rule, value, callback) {
+								if(value == '' || value == undefined || value == null){
+									callback(new Error('请输入正整数'));
+								}else{
+								
+						                  callback();
+						            
+						           }
+							},
+							trigger: 'blur'
+						}
+    ">
+							<el-input disabled style="width:300px" v-model="domain.number" onkeyup="if(this.value.length==1){this.value=this.value.replace(/[^1-9]/g,'')}else{this.value=this.value.replace(/\D/g,'')}" onafterpaste="if(this.value.length==1){this.value=this.value.replace(/[^1-9]/g,'')}else{this.value=this.value.replace(/\D/g,'')}"></el-input>
+							<!-- @keyup.native="number(index)" -->
+						
+						</el-form-item>
+
+					</div>
+
+			
+				</el-form> <span slot="footer" class="dialog-footer"> <el-button
+				@click="dialogVisible = false">关闭</el-button> 
+		</span> </el-dialog>
+
+		</div>
+		<script>
+			var app = new Vue({
+				el: "#app",
+				data: {
+					innerVisible: false,
+					value5: '',
+					readonly:'true',
+					pickerOptions2: {
+						shortcuts: [{
+							text: '最近一周',
+							onClick(picker) {
+								const end = new Date();
+								const start = new Date();
+								start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+								picker.$emit('pick', [start, end]);
+							}
+						}, {
+							text: '最近一个月',
+							onClick(picker) {
+								const end = new Date();
+								const start = new Date();
+								start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+								picker.$emit('pick', [start, end]);
+							}
+						}, {
+							text: '最近三个月',
+							onClick(picker) {
+								const end = new Date();
+								const start = new Date();
+								start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+								picker.$emit('pick', [start, end]);
+							}
+						}]
+					},
+					dynamicValidateForm: {
+						domains: [{
+							groupid: ''
+						}],
+					},
+					tableData: [],
+					pageGameInfo: {
+						name: "",
+						page: 1,
+
+						count: 5
+					},
+					total: '1',
+					dialogVisible: false,
+					ruleForm: {
+						domains: [{
+							groupid: ''
+						}],
+						picture: ""
+					},
+					multipleSelection: [],
+					groupArr: [],
+					gameField: [],
+					disclaimerList: [],
+					rules: {
+						gamename: [{
+							required: true,
+							message: '请输入赛事名称',
+							trigger: 'blur'
+						}],
+						groupid: [{
+							required: true,
+							message: '请输入说明',
+							trigger: 'blur'
+						}],
+						stadiumList: [{
+							required: true,
+							message: '请选择赛事场地',
+							trigger: 'change'
+						}],
+						disclaimerid: [{
+							required: true,
+							message: '请选择免责声明',
+							trigger: 'change'
+						}],
+						introduce: [{
+							required: true,
+							message: '请输入赛事简介',
+							trigger: 'change'
+						}],
+						picture: [{
+							required: true,
+							message: '请添加赛事宣传图片',
+							trigger: 'change'
+						}],
+						applydate: [{
+							required: true,
+							message: '请输入报名开始时间',
+							trigger: 'change'
+						}],
+						cutdate: [{
+							required: true,
+							message: '请输入报名截止时间',
+							trigger: 'change'
+						}],
+						begindate: [{
+							required: true,
+							message: '请输入比赛开始时间',
+							trigger: 'change'
+						}],
+						enddate: [{
+							required: true,
+							message: '请输入比赛结束时间',
+							trigger: 'change'
+						}]
+					},
+					disclaimerContent:''
+
+				},
+
+				methods: {
+
+					stateFormatter:function(row, column){
+						if(row.state==0){
+							return "未开启";							
+						}else if(row.state==1){
+							return "已开启";	
+							}else {
+								return "已关闭";
+							}
+					},
+					lookSM: function() { //若舍命id为空，提示选择声明，否则打开
+						if(app.ruleForm.disclaimerid == null) {
+							app.$message({
+								message: '请选择声明',
+								type: 'warning'
+							});
+						} else { //id查免责声明
+
+							axios.get('/sports/gameinfo/getDisclaimerContent?id=' + app.ruleForm.disclaimerid).then(
+								function(response) {
+									app.disclaimerContent=response.data.content;
+								})
+
+							app.innerVisible = true; //打开免责声明
+
+						}
+					},
+					onSelects: function(event, index) { //event选中的值，  index.索引    下拉框组别
+
+						var arrays = app.dynamicValidateForm.domains;
+						for(var ind in arrays) { //遍历存值得数组
+							if(ind != index) { //  遍历的行不等于当前行，  判断是否相等
+								if(arrays[ind].groupid == event) {
+									arrays[index].groupid = '';
+									app.$message({
+										message: '组别不能相同',
+										type: 'warning'
+									});
+								}
+							}
+						}
+					},
+					closeDialog() {
+						this.$refs.ruleForm.resetFields();
+						this.$refs[dynamicValidateForm].ruleForm.resetFields();
+					},
+					chooseTimeRange(t) {
+						//alert(t);//结果为一个数组，如：["2018-08-04", "2018-08-06"]
+						/*  var a = JSON.stringify(t);
+						 alert(a); */
+						/* for ( var i = 0; i <t.length; i++){
+						    alert(t[i]);
+						} */
+						//var t2=[{startTime:t[0]},{endTime:t[1]}];
+						if(t) {
+							app.pageGameInfo.applydate = t[0];
+							app.pageGameInfo.cutdate = t[1];
+							/*  
+							var t2={"startTime":t[0],"endTime":t[1]};
+							 alert(JSON.stringify(t2));
+ */
+						} else {
+							// alert("空");
+							app.pageGameInfo.applydate = "";
+							app.pageGameInfo.cutdate = "";
+						}
+					},
+
+					beforeAvatarUpload(file) {
+						const isJPG = file.type === 'image/jpeg';
+						const isLt2M = file.size / 1024 / 1024 < 2;
+
+						if(!isJPG) {
+							this.$message.error('上传图片只能是 JPG 格式!');
+						}
+						if(!isLt2M) {
+							this.$message.error('上传图片大小不能超过 2MB!');
+						}
+						return isJPG && isLt2M;
+					},
+					handleAvatarSuccess(res, file) {
+						if(res != null) {
+							app.ruleForm.picture = res;
+						}
+						this.$forceUpdate();
+					},
+					handleChange(value) {
+
+						console.log(value);
+					},
+
+					removeDomain(item) {
+						var index = this.dynamicValidateForm.domains.indexOf(item)
+						if(index !== -1) {
+							this.dynamicValidateForm.domains.splice(index, 1)
+						}
+					},
+					addDomain() {
+						this.dynamicValidateForm.domains.push({
+							number: '',
+							key: Date.now()
+						});
+					},
+					submitForm(formName) {
+						this.$refs[formName].validate(function(valid) {
+							if(valid) {
+								alert('submit!');
+							} else {
+								console.log('error submit!!');
+								return false;
+							}
+						});
+
+					},
+					handleSelectionChange: function(val) {
+						this.multipleSelection = val;
+					},
+					handleEdit: function(index, row) { //查看详情
+						axios.get('/sports/gameinfo/selectGameInfo?id=' + row.id).then(
+							function(response) {
+								app.ruleForm = response.data;
+								app.dynamicValidateForm.domains = response.data.domains;
+							})
+						app.dialogVisible = true;
+					},
+					handleClose: function(index, row) { //点击关闭
+						axios.get('/sports/gameinfo/handleClose?id=' + row.id).then(
+							function(response) {
+								reload();
+							})
+						
+					},
+					handleOpen: function(index, row) { //点击开启
+						axios.get('/sports/gameinfo/handleOpen?id=' + row.id).then(
+							function(response) {
+								reload();
+							})
+					
+					},
+					handleSizeChange: function(val) {
+						app.pageGameInfo.count = val;
+						app.pageGameInfo.page = 1;
+						reload();
+						console.log("每页 " + val + " 条");
+					},
+					handleCurrentChange: function(val) {
+						app.pageGameInfo.page = val;
+						reload();
+						console.log("当前页:" + val);
+					},
+			
+					saveGameInfo: function() { //保存
+
+						this.$refs["ruleForm"].validate(function(valid) {
+							app.$refs["dynamicValidateForm"].validate(function(validss) {
+
+								if(valid) {
+									if(validss) {
+
+										app.ruleForm.domains = app.dynamicValidateForm.domains;
+										axios.post('/sports/gameinfo/saveGameInfo', app.ruleForm).then(
+											function(response) {
+												if(response.data.code == 200) {
+													app.$message({
+														message: response.data.msg,
+														type: 'success'
+													});
+													app.dialogVisible = false;
+													reload();
+												} else if(response.data.code == 300) {
+													app.$message({
+														message: response.data.msg,
+														type: 'warning'
+													});
+												} else {
+													app.$message.error(response.data.msg);
+												}
+											})
+									}
+								}
+							})
+						})
+					},
+					searchCondition: function() { //点击查询，
+						app.pageGameInfo.page = 1;
+						reload();
+					}
+				}
+			})
+
+			/* 进页面查询 */
+			function reload() {
+
+				axios.post('/sports/gameinfo/getReload', app.pageGameInfo).then(
+					function(response) {
+						app.tableData = response.data.reloadList;
+						app.total = response.data.reloadCount;
+					})
+			}
+
+			function getselectGroupAndField() { //获取组别  和体育场列表
+				axios.get('/sports/gameinfo/getselectGroupAndField').then(
+					function(response) {
+						app.groupArr = response.data.groupAll;
+						app.gameField = response.data.sportAll;
+						app.disclaimerList = response.data.disclaimerList;
+
+					})
+			}
+			reload();
+			getselectGroupAndField();
+		</script>
+
+	</body>
+
+</html>

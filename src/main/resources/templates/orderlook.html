@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+		<script src="/sports/js/vue.js"></script>
+		<!-- 引入样式 -->
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<link rel="stylesheet" href="/sports/css/element-icons.woff">
+		<!-- 引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+		<script src="/sports/js/axios.min.js"></script>
+<body>
+<div id="app">
+	<div>
+			订单编号：<el-input v-model="orderlookQuery.ordernum" style="width:200px"></el-input>
+			核销码：<el-input v-model="orderlookQuery.code" style="width:200px"></el-input>
+			<el-button icon="el-icon-search" circle @click="orderlookSearch"></el-button>
+			<el-button type="primary" round style="margin:50px" @click="exportExcel">生成票务销售表格</el-button>
+		</div>
+	  <div>
+ 	<el-table id="#out-table" :data="tableData"  style="width: 100%" >
+      <el-table-column type="index"></el-table-column>
+	  <el-table-column type="selection" width="55" ></el-table-column>
+      <el-table-column  prop="ordernum" label="订单编号"  width="180"> </el-table-column>
+      <el-table-column prop="code" label="核销码" width="180"> </el-table-column>
+      <el-table-column prop="state" label="状态" width="180" :formatter="stateFormatter"></el-table-column>
+      <el-table-column prop="name" label="操作人" width="180"></el-table-column>
+      <el-table-column label="操作">
+      <template slot-scope="scope">
+     	<el-button size="mini" @click="editstate(scope.row)">修改状态</el-button>
+      </template>
+    </el-table-column>
+    </el-table>
+</div>
+ 			<div>
+				<el-pagination background  @size-change="handleSizeChange" 
+				@current-change="handleCurrentChange"  
+				:page-sizes="[5, 10, 15, 20]"
+				 :page-size="5" layout="total, sizes, prev, pager, next, jumper" :total="tableTotal">
+				</el-pagination>
+   			 </div> 
+<div>
+   			 <el-dialog  title="提示"  :visible.sync="dialogVisible" width="30%">
+  				<el-form  :model="orderlookInfo"  ref="orderlookInfo" label-width="100px" class="demo-ruleForm">
+ 				 <el-form-item label="状态" prop="state">
+ 				 <input v-model="orderlookInfo.id" type="hidden" />
+				 <el-select v-model="orderlookInfo.state" placeholder="请选择">
+				  	<el-option  :key="1" label="未核销" :value="1"></el-option>
+ 				    <el-option  :key="0" label="核销" :value="0"></el-option>
+ 				 </el-select>
+ 				 </el-form-item>
+ 				
+				</el-form>
+			  <span slot="footer" class="dialog-footer">
+			    <el-button @click="dialogVisible = false">取 消</el-button>
+			    <el-button type="primary" @click="changestate">确 定</el-button>
+			  </span>
+			</el-dialog>
+   			 
+   			 </div>
+</div>
+
+
+<script type="text/javascript">
+
+	var app = new Vue({
+		
+		el:"#app",
+		data:{
+			orderlookQuery:{
+				page:1, //页数
+				count:5, //每页几条
+				ordernum:"",
+				code:""
+			},
+			dialogVisible:false,
+			orderlookInfo:[],
+			tableTotal:0,
+			tableData:[]
+		},
+		methods:{
+			stateFormatter:function(row, column, cellValue, index){
+            	return cellValue == "1"?"未核销":"已核销";
+            },
+			handleSizeChange:function(val){
+            	this.stadiumQuery.count = val;
+                this.stadiumQuery.page = 1;
+               reload();
+            },
+            handleCurrentChange:function(val){
+            	this.stadiumQuery.page = val;
+	              reload();
+            },
+			orderlookSearch:function(val){
+            	reload();
+            },
+            editstate:function(orderlookInfo){
+            	
+            	axios.get('/sports/orderlook/getOrderLookById?id='+orderlookInfo.id)
+			      .then(function(response) {
+				       app.orderlookInfo = response.data;
+				       app.dialogVisible = true;
+			     });
+            },
+            changestate:function(val){
+            	axios.post('/sports/orderlook/editOrderlook',this.orderlookInfo)
+    			.then(function(response) {
+    				 reload();
+    			});
+    			this.dialogVisible = false;
+            },
+            exportExcel:function() {
+            	window.location.href='/sports/orderlook/excelOrderLook';
+            }
+		}
+	})
+	function reload(){
+		axios.post('/sports/orderlook/getOrderLook',app.orderlookQuery)
+		.then(function(response) {
+			
+			app.tableTotal = response.data.gettotal;
+			app.tableData = response.data.getorderlook;
+		})
+	}
+	reload();
+</script>
+</body>
+</html>

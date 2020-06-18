@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ 
+ 
+<mapper namespace="com.xxx.proj.mapper.ISportMapper">
+<!-- 分页+查询 -->
+	<sql id="sportsQuery">
+
+	        <if test="sportname != null and sportname != ''">
+	           and sportname  like CONCAT('%',#{sportname},'%')
+	        </if>
+	        <if test="sportaddress != null and sportaddress != '' ">
+	           and sportaddress like CONCAT('%',#{sportaddress},'%')
+	        </if>
+	</sql>
+	
+	
+	<select id="getSport" resultType="map">
+	      select id,sportname,sportintro,sportaddress,stateid,sportone,sporttwo,sportthree,sportfour
+	      from sportadd
+	      <where>
+	      <include refid="sportsQuery" />
+	      </where>
+	      order by id DESC
+	      limit #{page},#{count}
+	</select>
+	
+	
+	
+	<select id="getTotal" resultType="java.lang.Integer">
+	      select count(*) c from sportadd
+	      <where>
+	      <include refid="sportsQuery" />
+	      </where> 
+	</select>
+	
+	<!-- 添加体育场 -->
+	<insert id="addSports">
+		insert into sportadd (sportname,sportintro,sportinfo,sportaddress,sportone,sporttwo,sportthree,sportfour,lon,lat,stateid)
+		values 
+		(#{sportname},#{sportintro},#{sportinfo},#{sportaddress},#{sportone},#{sporttwo},#{sportthree},#{sportfour},#{lon},#{lat},#{stateid})
+	</insert>
+	
+	<!-- 修改体育场 -->
+	<update id="editSports">
+		update sportadd set sportname=#{sportname},sportintro=#{sportintro},sportinfo=#{sportintro},
+		sportaddress=#{sportaddress},sportone=#{sportone},sporttwo=#{sporttwo},sportthree=#{sportthree},
+		sportfour=#{sportfour},lon=#{lon},lat=#{lat},stateid=#{stateid}
+		where id = #{id}
+	</update>
+	<!-- 根据id获取体育场 -->
+	<select id="getSportById" resultType="com.xxx.proj.entity.SportAdd">
+	   select *
+	   from  SportAdd  
+	   where id = #{id}
+	</select>
+	
+	<delete id="deleteSport">
+			delete 
+			from SportAdd
+			where SportAdd.id in
+		<foreach collection="array" item="id"  open="("
+			separator="," close=")">
+			#{id}
+		</foreach>
+	
+	</delete>
+	<!-- 查询存不存在相同的名称的 -->
+	<select id="selectByName" resultType="java.lang.Integer">
+		select count(*)
+		from SportAdd
+		where sportname = #{sportname}
+	</select>
+	</mapper>

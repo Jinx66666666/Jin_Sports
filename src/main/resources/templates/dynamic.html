@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>user.html</title>
+		<meta charset="utf-8" />
+		<!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+		引入样式
+		<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+		引入组件库
+		<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
+		<script src="/sports/js/vue.js"></script>
+		<script src="/sports/js/axios.min.js"></script>
+		<!-- 引入样式 -->
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<!-- 引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+		<style type="text/css">
+			.avatar-uploader .el-upload {
+				border: 1px dashed #d9d9d9;
+				border-radius: 6px;
+				cursor: pointer;
+				position: relative;
+				overflow: hidden;
+			}
+			
+			.avatar-uploader .el-upload:hover {
+				border-color: #409EFF;
+			}
+			
+			.avatar-uploader-icon {
+				font-size: 28px;
+				color: #8c939d;
+				width: 178px;
+				height: 178px;
+				line-height: 178px;
+				text-align: center;
+			}
+			
+			.avatar {
+				width: 178px;
+				height: 178px;
+				display: block;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="app">
+			<div>
+				<el-button type="success" icon="el-icon-plus" @click="showModel" circle></el-button>
+				<el-button type="danger" icon="el-icon-delete" circle @click="deleteDynamic"></el-button>
+				动态名称:
+				<el-input v-model="dynamicQuery.dynamictitle" placeholder="请输入动态名称" style="width:200px" clearable></el-input>
+				简介:
+				<el-input v-model="dynamicQuery.dynamicintro" placeholder="请输入简介" style="width:200px" clearable></el-input>
+				<el-button icon="el-icon-search" circle @click="reviewSearch"></el-button>
+			</div>
+
+			<el-table :data="tableData" style="width: 100% ;height:90%" @selection-change="handleSelectionChange">
+				<el-table-column type="index"></el-table-column>
+				<el-table-column type="selection"  width="55"></el-table-column>
+				<el-table-column prop="dynamictitle" label="最新动态" width="300">
+				</el-table-column>
+				<el-table-column prop="dynamicintro" label="内容简介" width="500">
+				</el-table-column>
+				<el-table-column label="操作">
+					<template slot-scope="scope">
+						<el-button size="mini" @click="editreview(scope.row)">编辑</el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+			<div>
+				<el-pagination @size-change="handleSizeChange" :current-page="dynamicQuery.page" @current-change="handleCurrentChange" :page-sizes="[5, 10, 15, 20]" :page-size="5" layout="total, sizes, prev, pager, next, jumper" :total="tableTotal">
+				</el-pagination>
+			</div>
+
+			<div>
+				<el-dialog title="精彩信息" :visible.sync="dialogVisible" @close="closeDialog" width="30%">
+					<el-form :model="dynamicInfo" ref="dynamicInfo" :rules="rules" label-width="100px"  class="demo-ruleForm">
+						<el-form-item label="动态标题" prop="dynamictitle">
+							<input type="hidden"  v-model="dynamicInfo.id" />
+							<el-input v-model="dynamicInfo.dynamictitle"  type="text" autocomplete="off"></el-input>
+						</el-form-item>
+						<el-form-item label="详细信息" prop="dynamicinfo">
+							<el-input v-model="dynamicInfo.dynamicinfo"  rows = "5" cols = "50" type="textarea" autocomplete="off"></el-input>
+						</el-form-item>
+						<el-form-item label="简介" prop="dynamicintro">
+							<el-input v-model="dynamicInfo.dynamicintro"   type="text" autocomplete="off"></el-input>
+						</el-form-item>
+					</el-form>
+					<span slot="footer" class="dialog-footer">
+						<el-button  type="primary" @click="changeDynamic">保存</el-button>
+    					<el-button  @click="dialogVisible = false">取 消</el-button>
+ 					</span>
+				</el-dialog>
+
+			</div>
+		</div>
+
+		<script type="text/javascript">
+			var app = new Vue({
+				el: "#app",
+				data: {
+					dynamicQuery: {
+						page: 1, //页数
+						count: 5, //每页几条
+						dynamictitle: "", //搜索动态名称
+						dynamicintro:""//搜索简介
+					},
+					tableTotal: 0,
+					tableData: [],
+					dialogVisible: false,
+					dynamicInfo: {
+					},
+					multipleSelection: [],
+					rules:{
+						dynamictitle: [
+				            { required: true, message: '请输入标题', trigger: 'blur' }
+				          ],
+				          dynamicinfo: [
+					            { required: true, message: '请输入详细信息', trigger: 'blur' }
+					      ],
+					      dynamicintro: [
+					            { required: true, message: '请输入简介', trigger: 'blur' }
+					          ]
+					}
+				},
+				methods: {
+					reviewSearch: function() {
+						reload();
+					},
+					handleSizeChange: function(val) {
+						this.dynamicQuery.count = val;
+						this.dynamicQuery.page = 1;
+						reload();
+					},
+					handleCurrentChange: function(val) {
+						this.dynamicQuery.page = val;
+						reload();
+					},
+					showModel: function() {
+						this.dialogVisible = true;
+						this.dynamicInfo = {};
+					},
+					closeDialog(){
+						this.$refs.dynamicInfo.resetFields();
+					},
+					changeDynamic: function() {
+						this.$refs.dynamicInfo.validate(function(valid) {
+							if(valid) {
+						
+						var url = '';
+						if(app.dynamicInfo.id == null) {
+							url = '/sports/dynamic/addDynamic';
+						} else {
+							url = '/sports/dynamic/editDynamic';
+						}
+						axios.post(url, app.dynamicInfo)
+							.then(function(response) {
+								reload();
+							});
+						app.dialogVisible = false;
+							}
+						});
+					},
+					editreview: function(dynamicInfo) {
+						edit(dynamicInfo);
+						
+					},
+					handleSelectionChange: function(val) {
+						this.multipleSelection = val;
+					},
+					deleteDynamic: function() {
+						this.$confirm('此操作将永久删除该数据, 是否继续?', '提示', {
+							confirmButtonText: '确定',
+							cancelButtonText: '取消',
+							type: 'warning'
+						}).then(function() {
+							var ids = [];
+							var s = app.multipleSelection;
+							for(var index in s) {
+								ids.push(s[index].id);
+							}
+							axios.post('/sports/dynamic/deleteDynamic', ids)
+								.then(function(response) {
+									app.dynamicQuery.page = 1;
+									reload();
+								});
+						})
+					}
+				}
+			});
+			function edit(dynamicInfo){
+				axios.get('/sports/dynamic/getDynamicByID?id=' + dynamicInfo.id)
+				.then(function(response) {
+					app.dynamicInfo = response.data;
+					app.dialogVisible = true;
+				});
+			};
+			function reload() {
+				axios.post('/sports/dynamic/getDynamic', app.dynamicQuery)
+					.then(function(response) {
+						app.tableTotal = response.data.gettotal;
+						app.tableData = response.data.getdynamic;
+					})
+			};
+			reload();
+			
+		</script>
+
+	</body>

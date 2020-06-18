@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ 
+ 
+<mapper namespace="com.xxx.proj.mapper.IStadiumMapper">
+<!-- 分页+查询 -->
+	<sql id="stadiumQuery">
+
+	        <if test="stadiumname != null and stadiumname != ''">
+	           and s.stadiumname  like CONCAT('%',#{stadiumname},'%')
+	        </if>
+	        <if test="address != null and address != '' ">
+	           and s.address  like CONCAT('%',#{address},'%')
+	        </if>
+	</sql>
+	
+	
+	<select id="getStadium" resultType="map">
+	      select s.id, s.stadiumname,s.stadiumintro,s.address,s.state,s.showone,s.showtwo,s.showthree,s.showfour
+	      from stadium s
+	      <where>
+	      <include refid="stadiumQuery" />
+	      </where>
+	      order by s.id DESC
+	      limit #{page},#{count}
+	</select>
+	
+	
+	
+	<select id="getTotal" resultType="java.lang.Integer">
+	      select count(*) c from stadium s
+	      <where>
+	      <include refid="stadiumQuery" />
+	      </where> 
+	</select>
+	
+	<!-- 查询场馆 -->
+	<select id="getSport" resultType="map">
+	      select id, sportname from sportadd
+	</select>
+	
+	
+	<!-- 添加场馆 -->
+	<insert id="addStadium">
+		insert into stadium (sportname,stadiumname,stadiumintro,stadiuminfo,address,showone,showtwo,showthree,showfour,lon,lat,state,sportid)
+		values 
+		(#{sportname},#{stadiumname},#{stadiumintro},#{stadiuminfo},#{address},#{showone},#{showtwo},#{showthree},#{showfour},#{lon},#{lat},#{state},#{sportid})
+	</insert>
+	
+	<!-- 修改场馆 -->
+	<update id="editStadium">
+		update stadium set sportname=#{sportname},stadiumname=#{stadiumname},stadiumintro=#{stadiumintro},
+		stadiuminfo=#{stadiuminfo},address=#{address},showone=#{showone},showtwo=#{showtwo},
+		showthree=#{showthree},showfour=#{showfour},lon=#{lon},lat=#{lat},state=#{state},sportid=#{sportid}
+		where id = #{id}
+	</update>
+	<!-- 根据id获取场馆 -->
+	<select id="getStadiumById" resultType="com.xxx.proj.entity.Stadium">
+	   select *  from  stadium where id = #{id}
+	</select>
+	
+	<delete id="deleteStadium">
+			delete 
+			from stadium
+			where stadium.id in
+		<foreach collection="array" item="id"  open="("
+			separator="," close=")">
+			#{id}
+		</foreach>
+	
+	</delete>
+	
+	<!-- 查询存不存在相同的名称的 -->
+	<select id="selectByName" resultType="java.lang.Integer">
+		select count(*)
+		from stadium
+		where stadiumname = #{stadiumname}
+	</select>
+	</mapper>

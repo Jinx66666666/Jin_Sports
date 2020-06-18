@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxx.proj.mapper.DisclaimerMapper">
+	<resultMap id="BaseResultMap" type="com.xxx.proj.entity.Disclaimer">
+		<id column="id" jdbcType="INTEGER" property="id" />
+		<result column="disclaimer" jdbcType="VARCHAR" property="disclaimer" />
+		<result column="content" jdbcType="VARCHAR" property="content" />
+	</resultMap>
+	<sql id="Base_Column_List">
+		id, disclaimer, content
+	</sql>
+
+	<!--分页加条件查询 -->
+	<sql id="DisclaimerPagemzsm">
+		<if test="name!=null">
+			where d.disclaimer like '%${name}%'
+		</if>
+	</sql>
+	<select id="getDisclaimerList" resultType="map">
+		select *
+		from disclaimer d
+		<include refid="DisclaimerPagemzsm" />
+		order by id desc
+		limit #{page},#{count}
+	</select>
+
+	<select id="getTotal" resultType="java.lang.Integer">
+		select count(*) c from disclaimer d
+		<include refid="DisclaimerPagemzsm" />
+	</select>
+
+<!-- 查询存不存在相同的名称的 -->
+	<select id="selectByName" resultType="java.lang.Integer">
+		select count(*)
+		from disclaimer
+		where disclaimer = #{disclaimer}
+	</select>
+
+	<!-- 添加一条数据 -->
+	<insert id="insertSelective" parameterType="com.xxx.proj.entity.Disclaimer">
+		insert into disclaimer
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				id,
+			</if>
+			<if test="disclaimer != null">
+				disclaimer,
+			</if>
+			<if test="content != null">
+				content,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				#{id,jdbcType=INTEGER},
+			</if>
+			<if test="disclaimer != null">
+				#{disclaimer,jdbcType=VARCHAR},
+			</if>
+			<if test="content != null">
+				#{content,jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+
+<!-- id 查信息 -->
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer"
+		resultMap="BaseResultMap">
+		select
+		<include refid="Base_Column_List" />
+		from disclaimer
+		where id = #{id,jdbcType=INTEGER}
+	</select>
+
+	<!-- 修改记录 -->
+	<update id="updateByPrimaryKey" parameterType="com.xxx.proj.entity.Disclaimer">
+		update disclaimer
+		set disclaimer = #{disclaimer,jdbcType=VARCHAR},
+		content = #{content,jdbcType=VARCHAR}
+		where id = #{id,jdbcType=INTEGER}
+	</update>
+
+<!-- 删除声明 -->
+	<delete id="deleteDisclaimerList" >
+			delete from disclaimer
+		where id  in
+		<foreach collection="array" item="id"  open="("
+			separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from disclaimer
+		where id = #{id,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="com.xxx.proj.entity.Disclaimer">
+		insert into disclaimer (id, disclaimer, content
+		)
+		values (#{id,jdbcType=INTEGER}, #{disclaimer,jdbcType=VARCHAR},
+		#{content,jdbcType=VARCHAR}
+		)
+	</insert>
+	<update id="updateByPrimaryKeySelective" parameterType="com.xxx.proj.entity.Disclaimer">
+		update disclaimer
+		<set>
+			<if test="disclaimer != null">
+				disclaimer = #{disclaimer,jdbcType=VARCHAR},
+			</if>
+			<if test="content != null">
+				content = #{content,jdbcType=VARCHAR},
+			</if>
+		</set>
+		where id = #{id,jdbcType=INTEGER}
+	</update>
+</mapper>

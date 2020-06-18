@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>stadiumticket.html</title>
+<script src="/sports/js/vue.js"></script>
+		<!-- 引入样式 -->
+		<link rel="stylesheet" href="/sports/css/index.css">
+		<link rel="stylesheet" href="/sports/css/element-icons.woff">
+		<!-- 引入组件库 -->
+		<script src="/sports/js/index.js"></script>
+		<script src="/sports/js/axios.min.js"></script>
+</head>
+<body>
+<div id="app">
+<div>
+			订单编号：<el-input v-model="stadiumticketQuery.ordernum" style="width:200px"></el-input>
+			
+			<el-button icon="el-icon-search" circle @click="Search"></el-button>
+		</div>
+		<div>
+		<el-table :data="tableData"  style="width: 100%">
+      <el-table-column type="index"></el-table-column>
+	  <el-table-column type="selection" width="55" label="选择"></el-table-column>
+      <el-table-column  prop="ordernum" label="订单编号"  width="180"> </el-table-column>
+      <el-table-column prop="orderdate" label="订单时间" width="180"> </el-table-column>
+      <el-table-column prop="price" label="价格" width="180"> </el-table-column>
+      <el-table-column prop="loginid" label="登录账号" width="180"> </el-table-column>
+      <el-table-column prop="number" label="数量" width="120"> </el-table-column>
+      <el-table-column prop="state" label="订单状态" width="180" > </el-table-column>
+      <el-table-column prop="paymenttype" label="支付类型" width="180"> </el-table-column>
+       <el-table-column label="操作">
+      <template slot-scope="scope">
+        <el-button size="mini" @click="seeDetails(scope.row)">查看详情</el-button>
+      </template>
+    </el-table-column>
+    </el-table>
+		</div>
+		<div>
+				<el-pagination @size-change="handleSizeChange" 
+				@current-change="handleCurrentChange" background    
+				:page-sizes="[5, 10, 15, 20]"
+				 :page-size="5" layout="total, sizes, prev, pager, next, jumper" :total="tableTotal">
+				</el-pagination>
+   		</div>
+   		<div>
+   			 <el-dialog  title="提示"  :visible.sync="dialogVisible" width="30%" circle>
+  				<el-form :model="ticketInfo" ref="ticketInfo" label-width="100px" class="demo-ruleForm">
+				<el-form-item label="订单编号" prop="ordernum">
+					<input type="hidden" v-model="ticketInfo.id" readonly />
+					<el-input v-model="ticketInfo.ordernum" type="text" autocomplete="off" readonly></el-input>
+				</el-form-item>
+				<el-form-item label="订单时间" prop="orderdate">
+					<el-input v-model="ticketInfo.orderdate" type="text" autocomplete="off" readonly></el-input>
+				</el-form-item>
+				<el-form-item label="价格" prop="price">
+					<el-input v-model="ticketInfo.price" type="text" autocomplete="off" readonly></el-input>
+				</el-form-item>
+				<el-form-item label="订单状态" prop="state">
+					<el-input v-model="ticketInfo.state" type="text" autocomplete="off" readonly></el-input>
+				</el-form-item>
+ 				 <el-form-item label="支付类型" prop="paymenttype">
+					<el-input v-model="ticketInfo.paymenttype" type="text" autocomplete="off" readonly></el-input>
+				</el-form-item>
+ 				 <el-form-item label="登录账号" prop="loginid">
+					<el-input v-model="ticketInfo.loginid" type="text" autocomplete="off" readonly></el-input>
+				</el-form-item>
+ 				 <el-form-item label="数量" prop="number">
+					<el-input v-model="ticketInfo.number" type="text" autocomplete="off" readonly></el-input>
+				</el-form-item>
+				</el-form>
+  <span slot="footer" class="dialog-footer">
+    <el-button @click="dialogVisible = false">关 闭</el-button>
+  </span>
+</el-dialog>
+   			 
+   			 </div>
+</div>
+
+<script type="text/javascript">
+
+var app = new Vue({
+	el:"#app",
+	data:{
+		stadiumticketQuery:{
+			page:1, //页数
+			count:5, //每页几条
+			ordernum:""
+		},
+		dialogVisible : false,
+		input: '',
+		tableTotal:0,
+		tableData:[],
+		dialogImageUrl:'',
+		readonly:true,
+		ticketInfo:[],
+		multipleSelection:[]
+	},
+	methods:{
+		stateFormatter:function(row, column, cellValue, index){
+			return cellValue == "1"?"已支付":"未支付";
+		},
+		seeDetails:function(ticketInfo){
+			axios.get('/sports/stadiumticket/getStadiumticketById?id='+ticketInfo.id)
+		      .then(function(response) {
+			       app.ticketInfo = response.data;
+			       app.dialogVisible = true;
+		     });
+        },
+        handleSizeChange:function(val){
+        	this.stadiumticketQuery.count = val;
+            this.stadiumticketQuery.page = 1;
+           reload();
+        },
+        handleCurrentChange:function(val){
+        	this.stadiumticketQuery.page = val;
+              reload();
+        },
+        handleSelectionChange: function(val) {
+			this.multipleSelection = val;
+		},
+        Search:function(val){
+        	reload();
+        }
+	}
+})
+
+function reload(){
+	axios.post('/sports/stadiumticket/getStadiumticket',app.stadiumticketQuery)
+	.then(function(response) {
+		
+		app.tableTotal = response.data.gettotal;
+		app.tableData = response.data.getstadiumticket;
+	})
+}
+reload();
+
+
+</script>
+</body>
+</html>
